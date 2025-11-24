@@ -455,31 +455,7 @@
     </style>
 </head>
 <body>
-    <!-- 導航列 -->
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-                <div class="logo">
-                    <span>🚀</span>
-                    <span>Django 應用</span>
-                </div>
-            </div>
-            <div class="user-section">
-                <div class="user-info">
-                    <div class="avatar">{{ request.user.username|first|upper }}</div>
-                    <div>
-                        <div style="font-weight: 600;">{{ request.user.username }}</div>
-                        <div style="font-size: 13px; opacity: 0.9;">{{ request.user.email }}</div>
-                    </div>
-                </div>
-                <form method="post" action="{% url 'logout' %}" style="margin: 0;">
-                    {% csrf_token %}
-                    <button type="submit" class="logout-btn">登出</button>
-                </form>
-            </div>
-        </div>
-    </nav>
+    {% include 'nav.html' %}
 
     <!-- 側邊欄遮罩 -->
     <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -538,9 +514,13 @@
                 <span class="sidebar-icon">👥</span>
                 <span>抽卡模擬器</span>
             </a>
-            <a href="" class="sidebar-link">
+            <a href="{% url "kuro_login" %}" class="sidebar-link">
                 <span class="sidebar-icon">⚙️</span>
-                <span>系統設定</span>
+                <span>Kuro帳號登入</span>
+            </a>
+            <a href="{% url "gacha_history" %}" class="sidebar-link">
+                <span class="sidebar-icon">⚙️</span>
+                <span>鳴潮抽卡查詢</span>
             </a>
         </div>
 

@@ -1,0 +1,25 @@
+<!-- 導航列 -->
+<nav class="navbar">
+    <div class="navbar-content">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <div class="logo">
+                <span>🚀</span>
+                <span>Django 應用</span>
+            </div>
+        </div>
+        <div class="user-section">
+            <div class="user-info">
+                <div class="avatar">{{ request.user.username|first|upper }}</div>
+                <div>
+                    <div style="font-weight: 600;">{{ request.user.username }}</div>
+                    <div style="font-size: 13px; opacity: 0.9;">{{ request.user.email }}</div>
+                </div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">登出</button>
+            </form>
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鳴潮抽卡模擬器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 背景動畫星星 */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            animation: fadeIn 0.8s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .gacha-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            animation: fadeIn 0.8s ease-out 0.5s;
+            animation-fill-mode: both;
+        }
+
+        .gacha-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .gacha-btn {
+            padding: 20px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gacha-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .gacha-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .gacha-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-single {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-single:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.7);
+        }
+
+        .btn-ten {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(240, 147, 251, 0.5);
+        }
+
+        .btn-ten:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(240, 147, 251, 0.7);
+        }
+
+        .reset-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 15px 30px;
+            font-size: 16px;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .results-section {
+            min-height: 400px;
+        }
+
+        .result-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: cardAppear 0.5s ease-out;
+            animation-fill-mode: both;
+        }
+
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: rotateY(90deg) scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: rotateY(0) scale(1);
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-rarity-3 {
+            background: linear-gradient(135deg, #a8dadc 0%, #457b9d 100%);
+        }
+
+        .card-rarity-4 {
+            background: linear-gradient(135deg, #b88bdb 0%, #8e44ad 100%);
+            box-shadow: 0 0 20px rgba(184, 139, 219, 0.6);
+        }
+
+        .card-rarity-5 {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            box-shadow: 0 0 30px rgba(246, 211, 101, 0.8);
+            animation: goldShine 2s infinite;
+        }
+
+        .card-rarity-6 {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            box-shadow: 0 0 30px rgba(246, 211, 101, 0.8);
+            animation: goldShine 2s infinite;
+        }
+
+        @keyframes goldShine {
+            0%, 100% {
+                box-shadow: 0 0 30px rgba(246, 211, 101, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 50px rgba(246, 211, 101, 1);
+            }
+        }
+
+        .card-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3));
+        }
+
+        .card-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-type {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 5px;
+        }
+
+        .card-stars {
+            color: #ffd700;
+            font-size: 14px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ffd700;
+            animation: fall 3s linear;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .flash.active {
+            animation: flashEffect 0.5s ease-out;
+        }
+
+        @keyframes flashEffect {
+            0% { opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        .pity-indicator {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .pity-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .pity-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .gacha-btn {
+                padding: 15px 30px;
+                font-size: 16px;
+            }
+
+            .result-cards {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    <div class="flash" id="flash"></div>
+    <div class="celebration" id="celebration"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>✨ 鳴潮抽卡模擬器 ✨</h1>
+            <p>祝你歐氣滿滿，金光閃閃！</p>
+        </div>
+
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-label">總抽卡次數</div>
+                <div class="stat-value" id="totalPulls">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">三星數量</div>
+                <div class="stat-value" id="star3Count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">四星數量</div>
+                <div class="stat-value" id="star4Count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">五星數量 🌟</div>
+                <div class="stat-value" id="star5Count">0</div>
+            </div>
+        </div>
+
+        <div class="gacha-section">
+            <div class="gacha-buttons">
+                <button class="gacha-btn btn-single" onclick="pullGacha(1)">
+                    <span>單抽 🎲</span>
+                </button>
+                <button class="gacha-btn btn-ten" onclick="pullGacha(10)">
+                    <span>十連抽 🎰</span>
+                </button>
+                <button class="gacha-btn reset-btn" onclick="resetStats()">
+                    <span>重置數據 🔄</span>
+                </button>
+            </div>
+
+            <div class="pity-indicator">
+                距離保底五星：<span id="pityCount">80</span> 抽
+                <div class="pity-bar">
+                    <div class="pity-progress" id="pityProgress" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="result-cards" id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // 遊戲數據
+        let totalPulls = 0;
+        let star3Count = 0;
+        let star4Count = 0;
+        let star5Count = 0;
+        let pityCounter = 0;
+        let pity4Counter = 0;
+        let guarantee = false;  // 是否大保底了
+
+        // 角色池
+        const characters = {
+            6: [
+                { name: '千咲', icon: '🔥', type: '湮滅' },
+            ],
+            5: [
+                { name: '維里奈', icon: '🔥', type: '衍射' },
+                { name: '安可', icon: '💨', type: '熱熔' },
+                { name: '卡卡羅', icon: '💧', type: '導電' },
+                { name: '凌陽', icon: '❄️', type: '冷凝' },
+                { name: '鑒心', icon: '⚡', type: '氣動' }
+            ],
+            4: [
+                { name: '四星武器', icon: '⚔️', type: '武器' },
+                { name: '四星角色', icon: '⚡', type: '角色' },
+            ],
+            3: [
+                { name: '武器', icon: '🏹', type: '武器' },
+            ]
+        };
+
+        // 初始化星星背景
+        function initStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // 判斷小保或大保
+        function guaranteeChoice(g) {
+            let rate;
+            if (g){
+                rate = 6;
+                g = false;
+            }
+            else {  // 小保底
+                let c = Math.floor(Math.random() * 2);
+                if (c === 1)
+                    rate = 6;
+                else {
+                    rate = 5;
+                    g = true;
+                }
+            }
+            return [g, rate]
+        }
+
+        // 抽卡邏輯
+        function pullGacha(count) {
+            const results = [];
+            
+            for (let i = 0; i < count; i++) {
+                pityCounter++;
+                pity4Counter++;
+                
+                let rarity;
+                
+                // 五星保底機制（80抽必出）
+                if (pityCounter >= 80) {
+                    let result = guaranteeChoice(guarantee);
+                    guarantee = result[0]
+                    rarity = result[1]
+                    pityCounter = 0;
+                } 
+                // 四星保底機制（10抽必出）
+                else if (pity4Counter >= 10) {
+                    rarity = 4;
+                    pity4Counter = 0;
+                }
+                else {
+                    const rand = Math.random() * 100;
+                    if (rand < 0.6) {
+                        // 0.6% 五星
+                        let result = guaranteeChoice(guarantee);
+                        guarantee = result[0]
+                        rarity = result[1]
+                        pityCounter = 0;
+                    } else if (rand < 6.1) {
+                        // 5.5% 四星
+                        rarity = 4;
+                        pity4Counter = 0;
+                    } else {
+                        // 93.9% 三星
+                        rarity = 3;
+                    }
+                }
+
+                const pool = characters[rarity];
+                const item = pool[Math.floor(Math.random() * pool.length)];
+                results.push({ ...item, rarity });
+
+                // 更新統計
+                totalPulls++;
+                if (rarity === 3) star3Count++;
+                if (rarity === 4) star4Count++;
+                if (rarity >= 5) star5Count++;
+            }
+
+            updateStats();
+            displayResults(results);
+            
+            // 如果抽到五星，播放特效
+            if (results.some(r => r.rarity >= 5)) {
+                playFiveStarEffect();
+            }
+        }
+
+        // 顯示結果
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
+
+            results.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = `card card-rarity-${item.rarity}`;
+                card.style.animationDelay = (index * 0.1) + 's';
+                
+                const stars = '⭐'.repeat(item.rarity);
+                
+                card.innerHTML = `
+                    <div class="card-icon">${item.icon}</div>
+                    <div class="card-name">${item.name}</div>
+                    <div class="card-type">${item.type}</div>
+                    <div class="card-stars">${stars}</div>
+                `;
+                
+                resultsContainer.appendChild(card);
+            });
+        }
+
+        // 更新統計
+        function updateStats() {
+            document.getElementById('totalPulls').textContent = totalPulls;
+            document.getElementById('star3Count').textContent = star3Count;
+            document.getElementById('star4Count').textContent = star4Count;
+            document.getElementById('star5Count').textContent = star5Count;
+            document.getElementById('pityCount').textContent = (80 - pityCounter).toString();
+            
+            const pityProgress = (pityCounter / 80) * 100;
+            document.getElementById('pityProgress').style.width = pityProgress + '%';
+        }
+
+        // 五星特效
+        function playFiveStarEffect() {
+            // 閃光效果
+            const flash = document.getElementById('flash');
+            flash.classList.add('active');
+            setTimeout(() => flash.classList.remove('active'), 500);
+
+            // 紙花效果
+            const celebration = document.getElementById('celebration');
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1'][Math.floor(Math.random() * 4)];
+                confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+                celebration.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        // 重置統計
+        function resetStats() {
+            if (confirm('確定要重置所有數據嗎？')) {
+                totalPulls = 0;
+                star3Count = 0;
+                star4Count = 0;
+                star5Count = 0;
+                pityCounter = 0;
+                pity4Counter = 0;
+                updateStats();
+                document.getElementById('results').innerHTML = '';
+            }
+        }
+
+        // 初始化
+        initStars();
+        updateStats();
+    </script>
+</body>
+</html>

@@ -24,9 +24,13 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("apps/", include("apps.urls")),
     path("login/", views.login_view, name="login"),
+    path("kuro_login/", views.kuro_login, name="kuro_login"),
     path("logout/", views.logout_view, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("restaurant/", views.restaurant_finder, name="restaurant"),
     path('gacha/', views.gacha_simulator, name='gacha'),
+    path('gacha-history/', views.gacha_history, name='gacha_history'),
+    # path('api/gacha-history/', views.gacha_history, name='gacha_history'),
+    path('blog/', include('blog.urls')),
 
 ]
