@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>附近餐廳搜尋 - Django 應用</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .page-header h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .search-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .filter-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            height: 600px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            height: 600px;
+            overflow-y: auto;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .results-header h2 {
+            color: #333;
+            font-size: 20px;
+        }
+
+        .results-count {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .restaurant-card {
+            padding: 20px;
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .restaurant-card:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateX(5px);
+        }
+
+        .restaurant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .restaurant-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .restaurant-rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        .restaurant-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .distance-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-open {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-closed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f0f0f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-results-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .map-container {
+                height: 400px;
+            }
+
+            .search-controls {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            .page-header h1 {
+                font-size: 28px;
+            }
+
+            .search-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>🍽️ 附近餐廳搜尋</h1>
+            <p>輸入地址或使用定位，找尋 1 公里內的美食</p>
+        </div>
+
+        <div class="search-section">
+            <div class="search-controls">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="addressInput" 
+                    placeholder="請輸入地址，例如：台北市信義區市府路 1 號"
+                >
+                <button class="btn btn-primary" onclick="searchByAddress()">
+                    🔍 搜尋
+                </button>
+                <button class="btn btn-secondary" onclick="getCurrentLocation()">
+                    📍 使用目前位置
+                </button>
+            </div>
+
+            <div class="filter-options">
+                <button class="filter-btn active" onclick="filterRestaurants('all')">全部餐廳</button>
+                <button class="filter-btn" onclick="filterRestaurants('rating')">高評分 ⭐</button>
+                <button class="filter-btn" onclick="filterRestaurants('open')">營業中 🟢</button>
+                <button class="filter-btn" onclick="filterRestaurants('distance')">最近距離 📍</button>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+
+            <div class="results-container" id="results">
+                <div class="no-results">
+                    <div class="no-results-icon">🔍</div>
+                    <h3>尚未搜尋</h3>
+                    <p>請輸入地址或使用定位開始搜尋附近餐廳</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let service;
+        let markers = [];
+        let currentFilter = 'all';
+        let allRestaurants = [];
+        const resultContext = `<div class="results-header">
+            <h2>搜尋結果</h2>
+            <span class="results-count" id="resultsCount">0 間餐廳</span>
+            </div>
+        `;
+
+        // 初始化地圖
+        function initMap() {
+            // 預設位置：台北市政府
+            const defaultLocation = { lat: 25.0375, lng: 121.5637 };
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: defaultLocation,
+                zoom: 15,
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            });
+
+            service = new google.maps.places.PlacesService(map);
+        }
+
+        // 使用目前位置
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                showLoading();
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const location = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        searchNearbyRestaurants(location);
+                    },
+                    (error) => {
+                        alert('無法取得位置：' + error.message);
+                        hideLoading();
+                    }
+                );
+            } else {
+                alert('您的瀏覽器不支援地理定位功能');
+            }
+        }
+
+        // 透過地址搜尋
+        function searchByAddress() {
+            const address = document.getElementById('addressInput').value;
+            if (!address) {
+                alert('請輸入地址');
+                return;
+            }
+
+            showLoading();
+            const geocoder = new google.maps.Geocoder();
+            
+            geocoder.geocode({ address: address }, (results, status) => {
+                if (status === 'OK') {
+                    const location = results[0].geometry.location;
+                    searchNearbyRestaurants({
+                        lat: location.lat(),
+                        lng: location.lng()
+                    });
+                } else {
+                    alert('無法找到該地址，請檢查輸入是否正確');
+                    hideLoading();
+                }
+            });
+        }
+
+        // 搜尋附近餐廳
+        function searchNearbyRestaurants(location) {
+            // 移除舊的標記
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+
+            // 設定地圖中心
+            map.setCenter(location);
+
+            // 新增目前位置標記
+            new google.maps.Marker({
+                position: location,
+                map: map,
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                },
+                title: '您的位置'
+            });
+
+            // 搜尋附近餐廳
+            const request = {
+                location: location,
+                radius: 1000, // 1公里 = 1000公尺
+                type: 'restaurant'
+            };
+
+            service.nearbySearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    allRestaurants = results.map(place => ({
+                        ...place,
+                        distance: calculateDistance(location, {
+                            lat: place.geometry.location.lat(),
+                            lng: place.geometry.location.lng()
+                        })
+                    }));
+                    displayResults(allRestaurants);
+                    addMarkers(allRestaurants);
+                } else {
+                    alert('搜尋失敗，請稍後再試');
+                }
+                hideLoading();
+            });
+        }
+
+        // 計算距離（公里）
+        function calculateDistance(pos1, pos2) {
+            const R = 6371; // 地球半徑（公里）
+            const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+            const dLon = (pos2.lng - pos1.lng) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return (R * c).toFixed(2);
+        }
+
+        // 新增地圖標記
+        function addMarkers(restaurants) {
+            restaurants.forEach((place, index) => {
+                const marker = new google.maps.Marker({
+                    position: place.geometry.location,
+                    map: map,
+                    title: place.name,
+                    label: (index + 1).toString()
+                });
+
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div style="padding: 10px;">
+                            <h3 style="margin: 0 0 5px 0;">${place.name}</h3>
+                            <p style="margin: 0; color: #666;">${place.vicinity}</p>
+                            <p style="margin: 5px 0 0 0; color: #ffc107; font-weight: bold;">
+                                ⭐ ${place.rating || 'N/A'}
+                            </p>
+                        </div>
+                    `
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        // 顯示搜尋結果
+        function displayResults(restaurants) {
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = resultContext
+            const resultsCount = document.getElementById('resultsCount');
+
+            resultsCount.textContent = `${restaurants.length} 間餐廳`;
+
+            if (restaurants.length === 0) {
+                resultsContainer.innerHTML += `
+                    <div class="no-results">
+                        <div class="no-results-icon">😔</div>
+                        <h3>找不到餐廳</h3>
+                        <p>附近 1 公里內沒有找到餐廳，請嘗試其他地址</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="results-header">
+                    <h2>搜尋結果</h2>
+                    <span class="results-count">${restaurants.length} 間餐廳</span>
+                </div>
+            `;
+
+            restaurants.forEach((place, index) => {
+                const isOpen = place.opening_hours?.open_now;
+                html += `
+                    <div class="restaurant-card" onclick="focusMarker(${index})">
+                        <div class="restaurant-header">
+                            <div>
+                                <div class="restaurant-name">${index + 1}. ${place.name}</div>
+                                <div class="restaurant-rating">
+                                    ⭐ ${place.rating || 'N/A'}
+                                    ${place.user_ratings_total ? `(${place.user_ratings_total})` : ''}
+                                </div>
+                            </div>
+                            <span class="distance-badge">${place.distance} km</span>
+                        </div>
+                        <div class="restaurant-info">
+                            <div class="info-item">
+                                <span class="info-icon">📍</span>
+                                <span>${place.vicinity}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-icon">🏷️</span>
+                                <span>${place.types?.slice(0, 3).join(', ') || '餐廳'}</span>
+                            </div>
+                            ${place.opening_hours ? `
+                                <div class="info-item">
+                                    <span class="status-badge ${isOpen ? 'status-open' : 'status-closed'}">
+                                        ${isOpen ? '🟢 營業中' : '🔴 休息中'}
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
+        }
+
+        // 聚焦到地圖標記
+        function focusMarker(index) {
+            if (markers[index]) {
+                map.setCenter(markers[index].getPosition());
+                map.setZoom(17);
+                google.maps.event.trigger(markers[index], 'click');
+            }
+        }
+
+        // 篩選餐廳
+        function filterRestaurants(type) {
+            // 更新按鈕狀態
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            currentFilter = type;
+            let filtered = [...allRestaurants];
+
+            switch(type) {
+                case 'rating':
+                    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    break;
+                case 'open':
+                    filtered = filtered.filter(r => r.opening_hours?.open_now);
+                    break;
+                case 'distance':
+                    filtered.sort((a, b) => a.distance - b.distance);
+                    break;
+            }
+
+            displayResults(filtered);
+        }
+
+        // 顯示載入中
+        function showLoading() {
+            document.getElementById('results').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>搜尋中，請稍候...</p>
+                </div>
+            `;
+        }
+
+        // 隱藏載入中
+        function hideLoading() {
+            // Loading 會在顯示結果時自動被替換
+        }
+
+        // Enter 鍵搜尋
+        document.getElementById('addressInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchByAddress();
+            }
+        });
+
+        
+        // 模擬初始化（實際上會由 Google Maps API 自動呼叫）
+        if (typeof google !== 'undefined') {
+            initMap();
+        }
+    </script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initMap" async defer></script>
+</body>
+</html>
