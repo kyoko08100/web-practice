@@ -30,7 +30,7 @@ urlpatterns = [
     path("restaurant/", views.restaurant_finder, name="restaurant"),
     path('gacha/', views.gacha_simulator, name='gacha'),
     path('gacha-history/', views.gacha_history, name='gacha_history'),
-    # path('api/gacha-history/', views.gacha_history, name='gacha_history'),
+    path('api/gacha-history/', views.get_gacha_history, name='get_gacha_history'),
     path('blog/', include('blog.urls')),
 
 ]
