@@ -1,7 +1,9 @@
 import asyncio
+import json
 import re
 import kuro
 from kuro.types import WuWaBanner, WuWaServer, Lang
+from .utils.kuro_api import APIClient
 import aiohttp
 import requests
 
@@ -38,7 +40,7 @@ def kuro_login(request):
 
 def logout_view(request):
     logout(request)
-    return render(request, "login.html")
+    return redirect('/login')
 
 @login_required(login_url="/login")
 def dashboard(request):
@@ -63,44 +65,66 @@ async def gacha_history(request):
 
 async def get_gacha_history(request):
     log_file = request.FILES.get("log_file")
-    lines = log_file.read().decode('utf-8').splitlines()
-    target = "https://aki-gm-resources-oversea.aki-game.net/aki/gacha/index.html#"
-    pattern = re.compile(r'https?://[^\s]+')
-    url = ""
-    gacha_list = []
 
-    for line in reversed(lines):
-        # line = line.decode("utf-8", errors="ignore")
-        if target in line:
-            print("找到：", line.strip())
-            urls = pattern.findall(line)[0]
-            url = urls.split("\"")[0]
-            print(f"url: {url}")
-            break
+    # 如果使用者傳 JSON，就用它
+    if log_file.content_type == "application/json":
+        try:
+            # decode → 轉成字串 → 解析 JSON
+            text = log_file.read().decode("utf-8")
+            result = json.loads(text)
+            gacha_data = [{"name": r["name"], "rarity": r.get("qualityLevel"), "time": r.get("time")} for r in
+                          result["data"]]
+        except Exception:
+            return JsonResponse({"error": "錯誤的json檔案內容"})
 
-    gacha_data = "沒有找到"
-    if url != "":
-        url_split = url.split('?')
-        host, params = url_split[0], url_split[1]
-        data = {}
-        for param in params.split('&'):
-            key, value = param.split('=')
-            data[key] = value
-        result = await kuro.Client().get_gacha_record(
-            player_id=data['player_id'],
-            record_id=data['record_id'],
-            banner=WuWaBanner.FEATURED_RESONATOR,
-            server=WuWaServer.ASIA,
-            lang=Lang.CHINESE_TRADITIONAL
-        )
-        gacha_data = [{"name": r.name, "rarity": r.rarity, "time": r.time.strftime('%Y-%m-%d %H:%M:%S')} for r in result]
         # 計算已墊抽數
-        count = 0
+        count = 1
         gacha_list = []
-        for r in result:
-            if r.rarity == 5:
-                gacha_list.append(count)
-                count = 1
-            else:
-                count += 1
-    return JsonResponse({"result": gacha_data, "gachaList": gacha_list}, safe=False, json_dumps_params={"ensure_ascii": False})
+        for r in reversed(result["data"]):
+            gacha_list.append(count)
+            if r.get("qualityLevel") == 5:
+                count = 0
+            count += 1
+        gacha_list.reverse()
+        return JsonResponse({"result": gacha_data, "gachaList": gacha_list}, safe=False,
+                            json_dumps_params={"ensure_ascii": False})
+    else:
+        # 從log檔找到最新的API請求參數
+        lines = log_file.read().decode('utf-8').splitlines()
+        target = "https://aki-gm-resources-oversea.aki-game.net/aki/gacha/index.html#"
+        pattern = re.compile(r'https?://[^\s]+')
+        url = ""
+        gacha_list = []
+
+        for line in reversed(lines):
+            if target in line:
+                print("找到：", line.strip())
+                urls = pattern.findall(line)[0]
+                url = urls.split("\"")[0]
+                print(f"url: {url}")
+                break
+
+        gacha_data = ""
+        if url != "":
+            url_split = url.split('?')
+            host, params = url_split[0], url_split[1]
+            data = {}
+            for param in params.split('&'):
+                key, value = param.split('=')
+                data[key] = value
+            client = APIClient()
+            result = await client.gacha_record(data['player_id'], data['record_id'], WuWaBanner.FEATURED_RESONATOR, WuWaServer.ASIA, Lang.CHINESE_TRADITIONAL)
+            # 沒有返回資料
+            if not result:
+                return JsonResponse({"error": "沒有找到參數或請求token已過期，請開啟遊戲中的喚取介面後，再將Client.log上傳"})
+            gacha_data = [{"name": r.get("name"), "rarity": r.get("qualityLevel"), "time": r.get("time")} for r in result]
+            # 計算已墊抽數
+            count = 0
+            gacha_list = []
+            for r in result:
+                if r.get("qualityLevel") == 5:
+                    gacha_list.append(count)
+                    count = 1
+                else:
+                    count += 1
+        return JsonResponse({"result": gacha_data, "gachaList": gacha_list}, safe=False, json_dumps_params={"ensure_ascii": False})

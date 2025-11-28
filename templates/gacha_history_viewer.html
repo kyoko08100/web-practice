@@ -209,7 +209,7 @@
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            animation: fadeIn 0.8s ease-out 0.6s;
+            animation: fadeIn 0.8s ease-out 0.1s;
             animation-fill-mode: both;
         }
 
@@ -344,7 +344,8 @@
         .item-count {
             font-size: 14px;
             color: #666;
-            text-align: center;
+            text-align: right;
+            min-width: 80px;
         }
 
         /* 圖片上傳 */
@@ -467,6 +468,89 @@
         .history-list::-webkit-scrollbar-thumb:hover {
             background: #764ba2;
         }
+
+        .action-btn {
+            background: #999;
+            color: white;
+            border: 2px solid transparent;
+            border-radius: 20px;
+        }
+
+        .action-btn:hover{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gacha-list {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.8s ease-out 0.2s;
+            animation-fill-mode: both;
+            display: flex;
+            gap: 12px;
+        }
+
+        .gacha-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .gacha-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #333;
+        }
+
+        .gacha-count {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            padding: 3px 8px;
+            font-size: 14px;
+            color: white;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .green {
+            background-color: #2ecc71;
+        }
+
+        .red {
+            background-color: #e74c3c;
+        }
+
+        .yellow {
+            background-color: #f1c40f;
+        }
+
+        .file-upload {
+            border: 2px dashed #e0e0e0;
+            border-radius: 12px;
+            padding: 50px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            margin-top: 10px;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .file-upload-icon {
+            font-size: 56px;
+            margin-bottom: 15px;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
@@ -482,19 +566,6 @@
             
             <form id="searchForm" method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
-{#                <div class="input-row">#}
-{#                    <div class="input-group">#}
-{#                        <label for="uid">遊戲 UID *</label>#}
-{#                        <input#}
-{#                            type="text"#}
-{#                            id="uid"#}
-{#                            placeholder="請輸入你的遊戲 UID，例如：800000000"#}
-{#                            required#}
-{#                            pattern="[0-9]{9}"#}
-{#                            title="請輸入 9 位數字的 UID"#}
-{#                        >#}
-{#                    </div>#}
-{##}
 {#                    <div class="input-group">#}
 {#                        <label for="server">伺服器區域 *</label>#}
 {#                        <select id="server" required>#}
@@ -517,19 +588,35 @@
 {#                        placeholder="從遊戲日誌中取得的授權金鑰（可選）"#}
 {#                    >#}
 {#                </div>#}
-                <div class="input-group">
-                    <label for="file">上傳Client.log</label>
-                    <div class="image-upload" onclick="document.getElementById('fileInput').click()">
-                        <div class="image-upload-icon">📷</div>
-                        <div>點擊或拖曳檔案到這裡上傳</div>
-                        <input
-                            type="file"
-                            id="fileInput"
-                            name="log_file"
-                            accept=".log, .txt, text/plain"
-                        >
+
+                <!-- 檔案上傳區域 -->
+                <div class="form-group">
+                    <label for="fileInput">上傳 Client.log</label>
+                    <input
+                        type="file"
+                        id="fileInput"
+                        name="file"
+                        accept=".log,.json"
+                        onchange="handleFileUpload(event)"
+                        style="display: none;"
+                    >
+
+                    <!-- 未上傳時顯示 -->
+                    <div
+                        id="uploadArea"
+                        class="file-upload"
+                        onclick="document.getElementById('fileInput').click()"
+                        ondragover="handleDragOver(event)"
+                        ondragleave="handleDragLeave(event)"
+                        ondrop="handleDrop(event)"
+                    >
+                        <div class="file-upload-icon">📁</div>
+                        <div style="font-size: 15px; color: #333; margin-bottom: 5px;">點擊或拖曳檔案到這裡上傳</div>
+                        <div class="form-hint">支援 .log 和 .json 檔案</div>
                     </div>
-                    <div class="image-preview" id="imagePreview"></div>
+
+                    <!-- 已上傳檔案顯示 -->
+                    <div id="uploadedFile" style="display: none;"></div>
                 </div>
 
                 <button type="submit" class="search-btn" id="searchBtn">
@@ -538,15 +625,19 @@
 
                 <div class="info-box">
                     <strong>💡 如何取得 Client.log？</strong>
-                    進入遊戲安裝位置資料夾 → 搜尋Client.log
+                    1. 登入遊戲內 → 喚取 → 按下查詢喚取紀錄 <br>
+                    2. 進入遊戲安裝位置資料夾 → 搜尋Client.log
                 </div>
             </form>
         </div>
 
-        <!-- 統計資訊 -->
+        <div class="gacha-list" id="gachaContainer" style="display: none;">
+            <!-- 各五星抽數 -->
+        </div>
 
+        <!-- 統計資訊 -->
         <div class="stats-grid" id="statsSection" style="display: none;">
-            <!-- <div class="stat-card">
+            <div class="stat-card">
                 <div class="stat-icon">📊</div>
                 <div class="stat-label">總抽卡次數</div>
                 <div class="stat-value" id="totalCount">0</div>
@@ -566,34 +657,67 @@
                 <div class="stat-label">五星數量</div>
                 <div class="stat-value" id="star5">0</div>
             </div>
-             -->
         </div>
-         -->
-        <!-- 紀錄區塊 -->
+
+
         <div class="history-section" id="historySection" style="display: none;">
             <div class="history-header">
                 <h2>喚取紀錄</h2>
                 <div class="filter-tabs">
                     <button class="filter-tab active" onclick="filterByRarity('all')">全部</button>
-                    <!--
                     <button class="filter-tab" onclick="filterByRarity(5)">五星 ⭐</button>
                     <button class="filter-tab" onclick="filterByRarity(4)">四星 💜</button>
                     <button class="filter-tab" onclick="filterByRarity(3)">三星</button>
-                     -->
+                </div>
+            </div>
+            <!-- 分頁控制 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div style="color: #666; font-size: 14px;">
+                    顯示第 <span id="pageStart">1</span>-<span id="pageEnd">10</span> 筆，共 <span id="totalRecords">0</span> 筆
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="filter-tab" onclick="previousPage()" id="prevBtn" style="padding: 8px 16px;">
+                        ← 上一頁
+                    </button>
+                    <span style="color: #666; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        第
+                        <input
+                            type="number"
+                            id="pageInput"
+                            oninput="goToPage()"
+                            style="width: 50px; padding: 5px 8px; border: 2px solid #e0e0e0; border-radius: 6px; text-align: center; font-size: 14px;"
+                        >
+                        / <span id="totalPages">1</span> 頁
+                    </span>
+                    <button class="filter-tab" onclick="nextPage()" id="nextBtn" style="padding: 8px 16px;">
+                        下一頁 →
+                    </button>
                 </div>
             </div>
 
+            <!-- 資料列表 -->
             <div class="history-list" id="historyList">
                 <!-- 紀錄將在這裡動態生成 -->
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        let allHistory = [];
+        let currentPage = 1;
+        const itemsPerPage = 5;
         let currentFilter = 'all';
         let logResult;
         let gachaList;
+        let history;
+        let indexList;
+        let charName;
+
+        fetch('/static/json/character.json')
+            .then(response => response.json())
+            .then(data => {
+                charName = data;
+        });
 
         // 提交查詢表單
         document.getElementById("searchForm").addEventListener("submit", function(e){
@@ -615,9 +739,24 @@
                 }
             })
             .then(res => {
+                if (res.data.error) {
+                    document.getElementById('historyList').innerHTML = "";
+                    document.getElementById('statsSection').style.display = "none";
+                    document.getElementById('historySection').style.display = "none";
+
+                    setTimeout(() => {
+                        removeFile()
+                        alert(res.data.error);
+                    }, 50);
+                    return ;
+                }
                 logResult = res.data.result
+                history = logResult
                 gachaList = res.data.gachaList
-                displayHistory(logResult, gachaList)
+                indexList = []
+                updateStats();
+                displayHistory();
+                createCard();
             })
             .catch(err => {
                 console.log(err);
@@ -630,56 +769,76 @@
                 const historySection = document.getElementById('historySection');
                 const statsSection = document.getElementById('statsSection');
 
-                statsSection.style.display = 'none';
-                historySection.style.display = 'block';
-
-                document.getElementById('historyList').innerHTML = `
-                <div class="loading">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">正在查詢紀錄，請稍候...</div>
-                </div>
-            `;
-            }
-
-            // 顯示紀錄
-            function displayHistory(history, gachaList) {
-                const historyList = document.getElementById('historyList');
-                const historySection = document.getElementById('historySection');
-                const statsSection = document.getElementById('statsSection');
-
                 statsSection.style.display = 'grid';
                 historySection.style.display = 'block';
 
-                /*if (history.length === 0) {
-                    historyList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🎲</div>
-                        <h3>暫無紀錄</h3>
-                        <p>找不到抽卡紀錄，請確認 UID 是否正確</p>
+                document.getElementById('historyList').innerHTML = `
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">正在查詢紀錄，請稍候...</div>
                     </div>
                 `;
+            }
+
+            // 顯示當前頁面的紀錄
+            function displayHistory() {
+                currentPage = 1;
+                renderPage();
+            }
+
+            // 渲染當前頁面
+            function renderPage() {
+                const historyList = document.getElementById('historyList');
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = startIndex + itemsPerPage;
+                const pageData = history.slice(startIndex, endIndex);
+                const totalPages = Math.ceil(history.length / itemsPerPage);
+
+                // 更新分頁資訊
+                document.getElementById('pageStart').textContent = history.length > 0 ? startIndex + 1 : 0;
+                document.getElementById('pageEnd').textContent = Math.min(endIndex, history.length);
+                document.getElementById('totalRecords').textContent = history.length;
+                document.getElementById('pageInput').value = currentPage;
+                document.getElementById('totalPages').textContent = totalPages;
+
+                // 更新按鈕狀態
+                document.getElementById('prevBtn').disabled = currentPage === 1;
+                document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+
+                // 如果沒有資料
+                if (history.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">😔</div>
+                            <h3>沒有資料</h3>
+                            <p>請重新嘗試</p>
+                        </div>
+                    `;
                     return;
-                }*/
+                }
 
+                // 渲染資料
                 let html = '';
-                let countIndex = 0;
-                let count = gachaList[countIndex];
-                history.forEach((item, index) => {
+                pageData.forEach((item, index) => {
                     html += `
-                    <div class="history-item" style="animation-delay: ${index * 0.05}s">
+                        <div class="history-item" style="animation-delay: 0.05s">
 
-                        <div class="item-details">
-                            <div class="item-name">${item.name}</div>
+                            <div class="item-details">
+                                <div class="item-name">${item.name}</div>
 
-                            <div class="item-time">⏰ ${item.time}</div>
-                        </div>
-                        <div class="item-rarity rarity-${item.rarity}">
-                            ${'⭐'.repeat(item.rarity)}
-                        </div>
-                `;
-                    if (count === 0) {
-                        countIndex += 1
-                        count = gachaList.length > countIndex ? gachaList[countIndex] : 80;
+                                <div class="item-time">⏰ ${item.time}</div>
+                            </div>
+                            <div class="item-rarity rarity-${item.rarity}">
+                                ${'⭐'.repeat(item.rarity)}
+                            </div>
+                    `;
+                    let count;
+                    if (indexList.length) {
+                        count = gachaList[indexList[startIndex + index]]
+                    } else {
+                        count = gachaList[startIndex + index]
+                    }
+                    if (item.rarity === 5) {
                         html += `
                             <div class="item-count">
                                 第 ${count} 抽出金
@@ -696,18 +855,72 @@
                         </div>
                         `;
                     }
-                    count -= 1;
                 });
-
                 historyList.innerHTML = html;
+                historyList.scrollTop = 0; // 滾動到頂部
+            }
+
+            // 上一頁
+            function previousPage() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage();
+                }
+            }
+
+            // 下一頁
+            function nextPage() {
+                const totalPages = Math.ceil(history.length / itemsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPage();
+                }
+            }
+
+            // 跳轉到指定頁面
+            function goToPage() {
+                const input = document.getElementById('pageInput');
+                const totalPages = Math.ceil(history.length / itemsPerPage);
+                let targetPage = parseInt(input.value);
+
+                // 驗證輸入
+                if (isNaN(targetPage) || targetPage < 1) {
+                    targetPage = 1;
+                } else if (targetPage > totalPages) {
+                    targetPage = totalPages;
+                }
+
+                currentPage = targetPage;
+                renderPage();
+            }
+
+            // 篩選稀有度
+            function filterByRarity(rarity) {
+                document.querySelectorAll('.filter-tab').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+
+                if (rarity === 'all') {
+                    history = logResult;
+                    indexList = [];
+                    displayHistory();
+                } else {
+                    const filtered = logResult.flatMap((item, index) =>
+                        item.rarity === rarity ? [{ item, index }] : []
+                    );
+                    history = filtered.map(f => f.item);
+                    indexList = filtered.map(f => f.index);
+                    displayHistory();
+                }
             }
 
             // 更新統計
-            function updateStats(history) {
-                const total = history.length;
-                const star3 = history.filter(h => h.rarity === 3).length;
-                const star4 = history.filter(h => h.rarity === 4).length;
-                const star5 = history.filter(h => h.rarity === 5).length;
+            function updateStats() {
+                const total = logResult.length;
+                const star3 = logResult.filter(h => h.rarity === 3).length;
+                const star4 = logResult.filter(h => h.rarity === 4).length;
+                const star5 = logResult.filter(h => h.rarity === 5).length;
 
                 document.getElementById('totalCount').textContent = total;
                 document.getElementById('star3').textContent = star3;
@@ -715,85 +928,167 @@
                 document.getElementById('star5').textContent = star5;
             }
 
-            // 篩選稀有度
-            function filterByRarity(rarity) {
-                // 更新按鈕狀態
-                document.querySelectorAll('.filter-tab').forEach(btn => {
-                    btn.classList.remove('active');
+            // 顯示過濾星數
+            function createCard() {
+                const colorClass = "red";
+                let html = "";
+
+                const filtered = logResult.flatMap((item, index) =>
+                        item.rarity === 5 ? [{ item, index }] : []
+                    );
+                filtered.forEach((item, index) => {
+                    html += `
+                    <div class="gacha-item">
+                        <img src="/static/img/${charName[item.item.name]}.png" class="gacha-avatar" />
+                        <span class="gacha-count ${colorClass}">${gachaList[item.index]}</span>
+                    </div>
+                `;
                 });
-                event.target.classList.add('active');
-
-                currentFilter = rarity;
-
-                if (rarity === 'all') {
-                    displayHistory(logResult, gachaList);
-                } else {
-                    const filtered = logResult.filter(h => h.rarity === rarity);
-                    displayHistory(filtered, gachaList);
-                }
+                let gachaContainer = document.getElementById("gachaContainer");
+                gachaContainer.style.display = 'flex';
+                gachaContainer.innerHTML = html;
             }
 
-            // 取得 CSRF Token
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
+            let uploadedFile = null;
+            // 處理拖曳懸停
+            function handleDragOver(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.style.borderColor = '#667eea';
+                event.currentTarget.style.background = '#f8f9ff';
             }
 
-            // 生成模擬資料（測試用）
-            function generateMockData() {
-                const items = [
-                    {name: '迪盧克', icon: '🔥', type: '火元素角色', rarity: 5},
-                    {name: '琴', icon: '💨', type: '風元素角色', rarity: 5},
-                    {name: '莫娜', icon: '💧', type: '水元素角色', rarity: 5},
-                    {name: '班尼特', icon: '🔥', type: '火元素角色', rarity: 4},
-                    {name: '菲謝爾', icon: '⚡', type: '雷元素角色', rarity: 4},
-                    {name: '香菱', icon: '🔥', type: '火元素角色', rarity: 4},
-                    {name: '彈弓', icon: '🏹', type: '武器', rarity: 3},
-                    {name: '神射手之誓', icon: '🎯', type: '武器', rarity: 3},
-                    {name: '黎明神劍', icon: '⚔️', type: '武器', rarity: 3}
-                ];
+            // 處理拖曳離開
+            function handleDragLeave(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.style.borderColor = '#e0e0e0';
+                event.currentTarget.style.background = '#fafafa';
+            }
 
-                const history = [];
-                for (let i = 0; i < 50; i++) {
-                    const rand = Math.random();
-                    let item;
+            // 處理拖曳放下
+            function handleDrop(event) {
+                event.preventDefault();
+                event.stopPropagation();
 
-                    if (rand < 0.06) {
-                        item = items[Math.floor(Math.random() * 3)]; // 5星
-                    } else if (rand < 0.2) {
-                        item = items[3 + Math.floor(Math.random() * 3)]; // 4星
-                    } else {
-                        item = items[6 + Math.floor(Math.random() * 3)]; // 3星
+                const uploadArea = event.currentTarget;
+                uploadArea.style.borderColor = '#e0e0e0';
+                uploadArea.style.background = '#fafafa';
+
+                const files = event.dataTransfer.files;
+
+                if (files.length > 0) {
+                    const file = files[0];
+
+                    // 檢查檔案類型
+                    const fileName = file.name.toLowerCase();
+                    if (!fileName.endsWith('.log') && !fileName.endsWith('.json')) {
+                        alert('請上傳 .log 或 .json 檔案');
+                        return;
                     }
 
-                    const date = new Date();
-                    date.setDate(date.getDate() - i);
+                    // 檢查檔案大小（10MB）
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('檔案超過 10MB 限制');
+                        return;
+                    }
 
-                    history.push({
-                        ...item,
-                        time: date.toLocaleString('zh-TW', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        }),
-                        count: 50 - i
-                    });
+                    uploadedFile = file;
+
+                    // 更新 input 元素（讓表單能正確提交）
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    document.getElementById('fileInput').files = dataTransfer.files;
+
+                    displayUploadedFile();
+                }
+            }
+
+            // 處理檔案上傳
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+
+                if (!file) return;
+
+                // 檢查檔案大小（10MB）
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('檔案超過 10MB 限制');
+                    event.target.value = '';
+                    return;
                 }
 
-                return history;
+                uploadedFile = file;
+                displayUploadedFile();
             }
+
+            // 顯示已上傳檔案
+            function displayUploadedFile() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileDisplay = document.getElementById('uploadedFile');
+
+                if (!uploadedFile) {
+                    uploadArea.style.display = 'block';
+                    fileDisplay.style.display = 'none';
+                    return;
+                }
+
+                // 隱藏上傳區域，顯示檔案資訊
+                uploadArea.style.display = 'none';
+                fileDisplay.style.display = 'block';
+
+                const fileSize = formatFileSize(uploadedFile.size);
+                const fileIcon = getFileIcon(uploadedFile.name);
+
+                fileDisplay.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px; padding: 20px; background: white; border: 2px solid #e0e0e0; border-radius: 10px; transition: all 0.3s ease; margin-top: 10px;">
+                        <div style="font-size: 36px;">${fileIcon}</div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: #333; font-size: 16px; margin-bottom: 5px;">${uploadedFile.name}</div>
+                            <div style="font-size: 14px; color: #666;">${fileSize}</div>
+                        </div>
+                        <button
+                            type="button"
+                            onclick="removeFile()"
+                            style="width: 36px; height: 36px; background: #ff6b6b; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;"
+                            onmouseover="this.style.transform='scale(1.1)'; this.style.background='#ff5252';"
+                            onmouseout="this.style.transform='scale(1)'; this.style.background='#ff6b6b';"
+                        >
+                            ×
+                        </button>
+                    </div>
+                `;
+            }
+
+            // 格式化檔案大小
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+                return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+            }
+
+            // 根據檔案類型返回圖示
+            function getFileIcon(filename) {
+                const extension = filename.split('.').pop().toLowerCase();
+
+                if (extension === 'log' || extension === 'json') {
+                    return '📄';
+                }
+                return '📎';
+            }
+
+            // 移除檔案
+            function removeFile() {
+                uploadedFile = null;
+                document.getElementById('fileInput').value = '';
+                displayUploadedFile();
+            }
+
+
+
 
     </script>
 </body>

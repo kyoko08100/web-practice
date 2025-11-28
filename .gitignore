@@ -20,7 +20,7 @@ media/
 staticfiles/
 
 # 環境設定
-.env
+mysite/.env
 *.env
 .env.*
 
