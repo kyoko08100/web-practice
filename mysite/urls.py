@@ -24,6 +24,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("apps/", include("apps.urls")),
     path("login/", views.login_view, name="login"),
+    path("register/", views.register, name="register"),
+    path("api/send_captcha/", views.send_captcha, name="send_captcha"),
     path("kuro_login/", views.kuro_login, name="kuro_login"),
     path("logout/", views.logout_view, name="logout"),
     path("dashboard/", views.dashboard, name="dashboard"),

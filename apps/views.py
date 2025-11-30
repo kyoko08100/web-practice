@@ -1,19 +1,29 @@
 import asyncio
 import json
+import random
 import re
 import kuro
 from kuro.types import WuWaBanner, WuWaServer, Lang
+
+from .forms import RegisterForm
 from .utils.kuro_api import APIClient
 import aiohttp
 import requests
+import datetime
 
 import apps.utils.api.kuro_function as my_kuro
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
-from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.utils import timezone
+from django.conf import settings
+
+from .models import Captcha
+from .task import send_email
 
 
 def index(request):
@@ -28,6 +38,60 @@ def login_view(request):
         else:
             return HttpResponse("Invalid login details supplied.")
     return render(request, "login.html")
+
+def register(request):
+    if request.method == "GET":
+        form = RegisterForm()
+        return render(request, "register.html", {"form": form})
+    elif request.method == "POST":
+
+        form = RegisterForm(request.POST)
+
+        if form.is_valid():
+            # captcha標記為已使用
+            captcha_obj = form.cleaned_data["captcha"]
+            captcha_obj.is_used = True
+            captcha_obj.save()
+
+            # 建立帳號
+            username = form.cleaned_data["username"]
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
+            User.objects.create_user(username=username, email=email, password=password)
+            messages.success(request, "註冊成功！請登入")
+            return redirect("/login")
+        else:
+            return render(request, "register.html", {"form": form})
+    else:
+        return render(request, "register.html")
+
+def send_captcha(request):
+    email = request.POST.get("email")
+    if not email:
+        return JsonResponse({"error": "請輸入email!"}, status=400)
+
+    user = User.objects.filter(email=email).first()
+    if user:
+        return JsonResponse({"error": "該email已被註冊!"}, status=400)
+
+    newest_captcha = Captcha.objects.filter(email=email).last()
+    if newest_captcha and timezone.now() < newest_captcha.created_at + datetime.timedelta(seconds=60):
+        return JsonResponse({"error": "60秒後才能取得新的驗證碼!"}, status=429)
+
+    # 隨機 6 位數
+    code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    captcha = ""
+    for i in range(6):
+        c = random.randint(0, len(code)-1)
+        captcha += code[c]
+
+    # 寄出郵件
+    send_email.delay(captcha, email)
+
+    # 儲存
+    Captcha.objects.create(email=email, code=captcha)
+
+    return JsonResponse({"message": "驗證碼已寄出"})
 
 @login_required(login_url="/login")
 def kuro_login(request):
@@ -128,3 +192,5 @@ async def get_gacha_history(request):
                 else:
                     count += 1
         return JsonResponse({"result": gacha_data, "gachaList": gacha_list}, safe=False, json_dumps_params={"ensure_ascii": False})
+
+

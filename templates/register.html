@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登入 - Django 應用</title>
+    <title>註冊 - Django 應用</title>
     <style>
         * {
             margin: 0;
@@ -221,72 +221,141 @@
                 padding: 30px 20px;
             }
         }
+
+        .required {
+            color: #f5576c;
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>歡迎回來</h1>
-            <p>請登入您的帳號</p>
+            <h1>註冊</h1>
+            <p>註冊您的帳號</p>
         </div>
         
-        <form class="login-form" method="post" action="{% url 'login' %}">
+        <form class="login-form" method="post" action="{% url 'register' %}">
             {% csrf_token %}
             
             <div class="form-group">
-                <label for="username">使用者名稱或電子郵件</label>
-                <input type="text" id="username" name="username" placeholder="請輸入使用者名稱" required>
+                <label for="username">使用者名稱 <span class="required">*</span></label>
+                {{ form.username }}
+                <p style="color:red">{{ form.username.errors }}</p>
+            </div>
+
+            <div class="form-group">
+                <label for="email">電子郵件 <span class="required">*</span></label>
+                {{ form.email }}
+                <p style="color:red">{{ form.email.errors }}</p>
+            </div>
+
+            <!-- 驗證碼欄位 -->
+            <div class="form-group">
+                <label for="captcha">驗證碼 <span class="required">*</span></label>
+                <div style="display: flex; gap: 10px;">
+                    {{ form.captcha }}
+                    <p style="color:red">{{ form.captcha.errors }}</p>
+                    <button
+                        type="button"
+                        id="captchaBtn"
+                        onclick="generateCaptcha()"
+                        style="padding: 14px 24px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; color: #667eea; transition: all 0.3s ease; white-space: nowrap;"
+                        onmouseover="this.style.borderColor='#667eea'; this.style.background='#f8f9ff';"
+                        onmouseout="this.style.borderColor='#e0e0e0'; this.style.background='white';"
+                    >
+                        獲取驗證碼
+                    </button>
+                </div>
             </div>
             
             <div class="form-group">
-                <label for="password">密碼</label>
-                <input type="password" id="password" name="password" placeholder="請輸入密碼" required>
+                <label for="password">密碼 <span class="required">*</span></label>
+                {{ form.password }}
+                <p style="color:red">{{ form.password.errors }}</p>
+            </div>
+
+            <div class="form-group">
+                <label for="rePassword">確認密碼 <span class="required">*</span></label>
+                {{ form.re_password }}
+                <p style="color:red">{{ form.re_password.errors }}</p>
             </div>
             
-            <div class="remember-forgot">
-                <div class="remember-me">
-                    <input type="checkbox" id="remember" name="remember">
-                    <label for="remember" style="margin: 0; font-weight: normal;">記住我</label>
-                </div>
-                <a href="" class="forgot-password">忘記密碼?</a>
-            </div>
-            
-            <button type="submit" class="login-button">登入</button>
+            <button type="submit" class="login-button">註冊</button>
             
             <div class="divider">
-                <span>或</span>
-            </div>
-            
-            <div class="social-login">
-                <button type="button" class="social-button">Google</button>
-                <button type="button" class="social-button">Facebook</button>
             </div>
             
             <div class="signup-link">
-                還沒有帳號? <a href="{% url 'register' %}">立即註冊</a>
+                <a href="{% url 'login' %}">返回登入</a>
             </div>
         </form>
     </div>
-    {% if messages %}
-      {% for message in messages %}
-        <script>alert("{{ message }}")</script>
-      {% endfor %}
-    {% endif %}
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        let countdownTimer = null;
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-        // 表單提交動畫
-        document.querySelector('.login-form').addEventListener('submit', function(e) {
-            const button = this.querySelector('.login-button');
-            button.textContent = '登入中...';
-            button.style.opacity = '0.7';
-        });
-
-        // 社交登入按鈕點擊效果
-        document.querySelectorAll('.social-button').forEach(button => {
-            button.addEventListener('click', function() {
-                alert('社交登入功能需要在 Django 後端配置');
+        // 寄送驗證碼
+        function generateCaptcha() {
+            let form = new FormData();
+            const btn = document.getElementById('captchaBtn');
+            form.append("email", document.getElementById("id_email").value);
+            axios.post("/api/send_captcha/", form,
+            {
+                headers: {
+                    "X-CSRFToken": csrftoken
+                }
+            }
+            ).then(res => {
+                alert("驗證碼已寄出");
+                startCountdown(btn, 60);
+            }).catch(err => {
+                alert("寄送失敗：" + err.response.data.error);
             });
-        });
+
+
+        }
+
+        // 倒數計時
+        function startCountdown(btn, seconds) {
+            let timeLeft = seconds;
+
+            // 禁用按鈕
+            btn.disabled = true;
+            btn.style.cursor = 'not-allowed';
+            btn.style.opacity = '0.6';
+            btn.style.background = '#f0f0f0';
+            btn.style.color = '#999';
+            btn.style.borderColor = '#e0e0e0';
+
+            // 更新按鈕文字
+            btn.textContent = `${timeLeft}秒後重新獲取`;
+
+            // 清除之前的計時器（如果存在）
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+
+            // 開始倒數
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+
+                if (timeLeft > 0) {
+                    btn.textContent = `${timeLeft}秒後重新獲取`;
+                } else {
+                    // 倒數結束，恢復按鈕
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                    btn.disabled = false;
+                    btn.style.cursor = 'pointer';
+                    btn.style.opacity = '1';
+                    btn.style.background = 'white';
+                    btn.style.color = '#667eea';
+                    btn.style.borderColor = '#e0e0e0';
+                    btn.textContent = '獲取驗證碼';
+                }
+            }, 1000);
+        }
     </script>
 </body>
 </html>
