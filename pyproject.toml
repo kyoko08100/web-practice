@@ -8,7 +8,9 @@ dependencies = [
     "celery>=5.5.3",
     "django>=5.2.8",
     "django-environ>=0.12.0",
+    "django-taggit>=6.1.0",
     "kuro-py>=0.6.1",
+    "pillow>=12.0.0",
     "redis>=7.1.0",
     "requests>=2.32.5",
 ]

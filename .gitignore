@@ -16,7 +16,7 @@ env/
 *.pyc
 db.sqlite3
 media/
-staticfiles/
+static/blog
 
 # 環境設定
 mysite/.env
