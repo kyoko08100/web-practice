@@ -1,0 +1,96 @@
+<style>
+    /* 側邊欄 */
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 70px;
+        width: 260px;
+        height: calc(100vh - 70px);
+        background: white;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+        overflow-y: auto;
+        transition: transform 0.3s ease;
+        z-index: 90;
+    }
+
+    .sidebar-section {
+        padding: 20px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .sidebar-title {
+        padding: 0 20px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px 20px;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .sidebar-link:hover {
+        background: #f8f9ff;
+        color: #667eea;
+    }
+
+    .sidebar-link.active {
+        background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .sidebar-link.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .sidebar-icon {
+        font-size: 20px;
+        width: 24px;
+        text-align: center;
+    }
+</style>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+        <div class="sidebar-title">主選單</div>
+        <a href="{% url 'dashboard' %}" class="sidebar-link">
+            <span class="sidebar-icon">🏠</span>
+            <span>儀表板</span>
+        </a>
+        <a href="{% url "blog:index" %}" class="sidebar-link">
+            <span class="sidebar-icon">📝</span>
+            <span>所有貼文</span>
+        </a>
+        <a href="{% url "blog:create" %}" class="sidebar-link active">
+            <span class="sidebar-icon">✍️</span>
+            <span>新增貼文</span>
+        </a>
+        <a href="{% url "blog:manage" %}" class="sidebar-link">
+            <span class="sidebar-icon">👤</span>
+            <span>管理貼文</span>
+        </a>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="sidebar-title">系統功能</div>
+        <a href="" class="sidebar-link">
+            <span class="sidebar-icon">⚙️</span>
+            <span>系統設定</span>
+        </a>
+    </div>
+</aside>

@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貼文詳細 - Django 應用</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; }
+        .back-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .back-btn:hover { background: white; color: #667eea; }
+        
+        .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        
+        .post-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+        
+        .post-header { margin-bottom: 20px; }
+        .post-title { font-size: 32px; color: #333; margin-bottom: 15px; }
+        .post-meta {
+            display: flex;
+            gap: 20px;
+            color: #666;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+        .post-meta-item { display: flex; align-items: center; gap: 5px; }
+        
+        .post-tags {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .tag {
+            padding: 5px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            font-size: 13px;
+        }
+        
+        .post-content {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333;
+            margin: 30px 0;
+            white-space: pre-wrap;
+        }
+        
+        .post-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .post-images img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+        .action-btn:hover { border-color: #667eea; background: #f8f9ff; }
+        
+        .comments-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .comments-header {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .comment-form {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        .comment-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+        .comment-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        .submit-btn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); }
+        
+        .comment-item {
+            padding: 20px;
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        .comment-item:hover { border-color: #667eea; background: #f8f9ff; }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .comment-author {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .author-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .author-name { font-weight: 600; color: #333; }
+        .comment-time { color: #999; font-size: 13px; }
+        .comment-content { color: #555; line-height: 1.6; }
+
+        
+        @media (max-width: 768px) {
+            .navbar { padding: 15px 20px; }
+            .container { margin: 20px auto; }
+            .post-card, .comments-section { padding: 25px 20px; }
+            .post-title { font-size: 24px; }
+        }
+
+         /* 圖片點擊放大 */
+        .zoomable-img {
+          width: 200px;
+          cursor: pointer;
+          transition: 0.3s;
+        }
+
+        .modal {
+          display: none;
+          position: fixed;
+          z-index: 100;
+          padding-top: 60px;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          overflow: auto;
+          background-color: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+          display: block;
+          margin: auto;
+          max-width: 80%;
+          max-height: 80%;
+        }
+
+        .close {
+          position: absolute;
+          top: 30px;
+          right: 50px;
+          color: white;
+          font-size: 40px;
+          cursor: pointer;
+        }
+
+        .comment-action-btn {
+            padding: 6px 14px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .comment-action-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        /* 回覆輸入框樣式 */
+        .reply-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .reply-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 10px;
+        }
+
+        .reply-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .reply-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-cancel {
+            padding: 8px 20px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #f0f0f0;
+            border-color: #ccc;
+        }
+
+        .btn-submit {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 回覆留言樣式 */
+        .comment-replies {
+            margin-top: 15px;
+            margin-left: 30px;
+            padding-left: 20px;
+            border-left: 3px solid #e0e0e0;
+        }
+
+        .reply-item {
+            margin-bottom: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-color: #e0e0e0;
+        }
+
+        .reply-item:hover {
+            background: #f0f2f5;
+        }
+
+        .reply-to {
+            color: #667eea;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .image-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            border: 2px solid #e0e0e0;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .preview-remove:hover {
+            background: rgba(255, 0, 0, 1);
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .comment-item {
+                padding: 15px;
+            }
+
+            .comment-replies {
+                margin-left: 15px;
+                padding-left: 15px;
+            }
+
+            .author-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+
+            .reply-actions {
+                flex-direction: column;
+            }
+
+            .btn-cancel,
+            .btn-submit {
+                width: 100%;
+            }
+        }
+
+        /* 回覆圖片上傳區 */
+        .reply-image-upload {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-upload-image {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .btn-upload-image:hover {
+            background: #f8f9ff;
+            border-color: #667eea;
+        }
+
+        .image-hint {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* 圖片預覽 */
+        .reply-image-preview {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .preview-image-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e0e0e0;
+        }
+
+        .preview-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 展開更多回覆 */
+        .load-more-replies {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: transparent;
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .load-more-replies:hover {
+            background: #f8f9ff;
+            border-color: #667eea;
+        }
+
+        /* 圖片燈箱 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes zoomIn {
+            from { transform: translate(-50%, -50%) scale(0); }
+            to { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: #bbb;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .action-icon-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .action-icon-btn:hover {
+            background: #f0f0f0;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="logo">🚀 Django 應用</div>
+            <a href="{% url 'blog:index' %}" class="back-btn">← 返回列表</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 貼文內容 -->
+        <div class="post-card">
+            <div class="post-header">
+                <h1 class="post-title">{{ blog.title }}</h1>
+                <div class="post-meta">
+                    <span class="post-meta-item">👤 {{ blog.author }}</span>
+                    <span class="post-meta-item">📅 {{ blog.pub_time|date:"Y/m/d H:i" }}</span>
+                    <span class="post-meta-item">👁️ {{ blog.views }} 0次瀏覽</span>
+                </div>
+            </div>
+            {% if tags %}
+                <div class="post-tags">
+                    {% for tag in tags %}
+                    <span class="tag">#{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="post-content">{{ blog.content }}</div>
+            {% if images %}
+                <div class="post-images">
+                    {% for image in images %}
+                        <img src="{{ image.image.url }}" alt="貼文圖片" class="zoomable-img" onclick="openImageModal(this.src)" style="max-width:200px; margin: 5px 5px 5px 0px;">
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="post-actions">
+                <button class="action-btn" onclick="likePost()">
+                    👍 讚 (<span id="likeCount"> blog.likes_count </span>)
+                </button>
+                <button class="action-btn">
+                    💬 留言 ( blog.comments_count )
+                </button>
+                <button class="action-btn">
+                    📤 分享
+                </button>
+            </div>
+        </div>
+
+        <!-- 留言區 -->
+        <div class="comments-section">
+            <h2 id="commentsCount" class="comments-header">💬 留言 ({{ comments.count }})</h2>
+
+
+            <!-- 留言表單 -->
+            <div class="comment-form">
+                <form id="commentForm" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <textarea
+                        id="commentContent"
+                        class="comment-input"
+                        name="content"
+                        placeholder="寫下你的留言..."
+                        required
+                    ></textarea>
+                    <!-- 圖片上傳按鈕和預覽 -->
+                    <div class="reply-image-upload">
+                        <input
+                            type="file"
+                            id="commentImages"
+                            name="images"
+                            accept="image/*"
+                            multiple
+                            style="display: none;"
+                            onchange="handleImageUpload(event)"
+                        >
+                        <button
+                            type="button"
+                            class="btn-upload-image"
+                            onclick="document.getElementById('commentImages').click()"
+                        >
+                            📷 上傳圖片
+                        </button>
+                        <span class="image-hint">最多 3 張圖片</span>
+                    </div>
+
+                    <!-- 圖片預覽區 -->
+                    <div class="image-preview" id="imagePreview"></div>
+                    <button type="submit" class="submit-btn">🚀 發送留言</button>
+                </form>
+            </div>
+
+            <!-- 留言列表 -->
+            <div id="commentsList">
+                {% for comment in comments %}
+                    <div class="comment-item" id="comment-{{ comment.id }}">
+                        <div class="comment-header">
+                            <div class="comment-author">
+                                <div class="author-avatar">{{ comment.author.username|first|upper }}</div>
+                                <span class="author-name">{{ comment.author }}</span>
+                                <div class="comment-time">{{ comment.pub_time|date:"Y/m/d H:i" }}</div>
+                            </div>
+                            <button class="comment-action-btn" onclick="toggleReplyBox({{ comment.id }})">💬 回覆</button>
+                        </div>
+                        <div class="comment-content">{{ comment.content }}</div>
+
+                        <!-- 留言圖片（如果有） -->
+                        {% if comment.get_images %}
+                            <div class="post-images">
+                                {% for img in comment.get_images %}
+                                    <img src="{{ img.image.url }}" class="zoomable-img" alt="留言圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="comment-actions">
+                            <button class="action-icon-btn" onclick="likeComment(1)">
+                                👍 <span id="like-1">12</span>
+                            </button>
+                            <button class="action-icon-btn">
+                                💬 <span>3</span>
+                            </button>
+                        </div>
+
+
+                    </div>
+                    <!-- 回覆輸入框 -->
+                    <div class="reply-box" id="reply-box-{{ comment.id }}" style="display: none;">
+{#                        <form method="post" action="{% url 'blog:reply_comment' comment.id %}">#}
+                        <form method="post">
+                            {% csrf_token %}
+                            <textarea class="reply-input" name="content" placeholder="回覆 @{{ comment.author.username }}..." required></textarea>
+                            <!-- 圖片上傳按鈕和預覽 -->
+                            <div class="reply-image-upload">
+                                <input
+                                    type="file"
+                                    id="reply-image-1"
+                                    name="images"
+                                    accept="image/*"
+                                    multiple
+                                    style="display: none;"
+                                    onchange="handleReplyImages(1, event)"
+                                >
+                                <button
+                                    type="button"
+                                    class="btn-upload-image"
+                                    onclick="document.getElementById('reply-image-1').click()"
+                                >
+                                    📷 上傳圖片
+                                </button>
+                                <span class="image-hint">最多 3 張圖片</span>
+                            </div>
+
+                            <!-- 圖片預覽區 -->
+                            <div class="image-preview" id="preview-1"></div>
+
+                            <div class="reply-actions">
+                                <button type="button" class="btn-cancel" onclick="toggleReplyBox({{ comment.id }})">取消</button>
+                                <button type="submit" class="btn-submit">發送</button>
+                            </div>
+                        </form>
+                    </div>
+                     <!-- 子評論 2 -->
+                    <div class="comment-replies">
+                        <div class="comment-item reply-item">
+                            <div class="comment-header">
+                                <div class="comment-author">
+                                    <div class="author-avatar" style="width: 32px; height: 32px; font-size: 14px;">C</div>
+                                    <div>
+                                        <div class="author-name">Charlie Liu</div>
+                                        <div class="comment-time">30 分鐘前</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="comment-content">
+                                <span class="reply-to">@Bob Chen</span> +1，這個功能確實很實用！
+                            </div>
+
+                            <!-- 子評論帶圖片 -->
+                            <div class="post-images">
+                                <img src="reply-image.jpg" alt="回覆圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">
+                            </div>
+
+                            <div class="comment-actions" style="padding-top: 8px;">
+                                <button class="action-icon-btn" onclick="likeComment('1-2')">
+                                    👍 <span id="like-1-2">2</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- 展開更多回覆按鈕 -->
+                        <button class="load-more-replies" onclick="loadMoreReplies(1)">
+                            查看更多 5 則回覆 ▼
+                        </button>
+                    </div>
+                {% empty %}
+                    <div id="noComment" style="text-align: center; padding: 40px; color: #999;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💭</div>
+                        <p>還沒有留言，成為第一個留言的人吧！</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <!-- 燈箱放大用的模態框 -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img src="" alt="" class="modal-content" id="modalImage">
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+
+        // 按讚功能
+        /*async function likePost() {
+            try {
+                const response = await fetch('', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                const data = await response.json();
+                document.getElementById('likeCount').textContent = data.likes_count;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }*/
+
+        // 取得 CSRF Token
+        /*function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }*/
+
+        // 表單提交後滾動到留言區
+        /*document.getElementById('commentForm').addEventListener('submit', function() {
+            setTimeout(() => {
+                document.getElementById('commentsList').scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        });*/
+
+        // 送出留言
+        document.getElementById('commentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const content = document.getElementById("commentContent").value;
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const fileInput = document.getElementById("commentImages");
+            let form = new FormData();
+            form.append("content", content);
+            // 多張圖片正確加法
+            if (fileInput) {
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    form.append("images", fileInput.files[i]);
+                }
+            }
+
+            axios.post("{% url 'blog:comments' blog.id %}", form,{
+                headers: {
+                    "X-CSRFToken": csrftoken,
+                    "Content-Type": "multipart/form-data"
+                }
+            })
+            .then(res => {
+                const data = res.data;
+                if (document.getElementById("noComment"))
+                    document.getElementById("noComment").style.display = 'none';
+
+                let commentsCountElement = document.getElementById("commentsCount");
+                let commentsCount = document.getElementById("commentsCount").innerHTML.split("(").slice(1);
+                commentsCountElement.innerHTML = `💬 留言 (${parseInt(commentsCount.toString(), 10)})`
+
+                let commentList = document.getElementById("commentsList");
+                let author = data.author
+                let authorIcon = author.charAt(0).toUpperCase()
+                let content = data.content
+                let pubTime = data.pub_time
+                let html = `
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <div class="comment-author">
+                                <div class="author-avatar">${authorIcon}</div>
+                                <span class="author-name">${author}</span>
+                                <div class="comment-time">${pubTime}</div>
+                            </div>
+                        </div>
+                        <div class="comment-content">${content}</div>
+                        <button class="comment-action-btn" onclick="replyComment(1)">💬 回覆</button>
+                    `
+                if (data.images.length > 0){
+                    html += `<div class="post-images">`
+                    data.images.forEach(url => {
+                        console.log(url)
+                        html += `<img src="${url}" alt="留言圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">`
+                    })
+                    html += `</div>`;  // class="post-images"的
+                }
+                html += `</div>`;  // class="comment-item"的
+
+                commentList.innerHTML += html;
+                // 清空輸入框跟圖片預覽框
+                document.getElementById("commentContent").value = "";
+                document.getElementById("imagePreview").value = "";
+            })
+            .catch(err => {
+                console.log(err)
+                alert(err.data.error);
+            });
+        })
+
+        // 切換回覆輸入框
+        function toggleReplyBox(commentId) {
+            const replyBox = document.getElementById(`reply-box-${commentId}`);
+
+            // 關閉所有其他回覆框
+            document.querySelectorAll('.reply-box').forEach(box => {
+                if (box.id !== `reply-box-${commentId}`) {
+                    box.style.display = 'none';
+                }
+            });
+
+            // 切換當前回覆框
+            if (replyBox.style.display === 'none' || replyBox.style.display === '') {
+                replyBox.style.display = 'block';
+                // 自動聚焦到輸入框
+                replyBox.querySelector('textarea').focus();
+            } else {
+                replyBox.style.display = 'none';
+            }
+        }
+
+        // 上傳圖片
+        let uploadedImages = [];
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            const previewContainer = document.getElementById('imagePreview');
+
+            if (uploadedImages.length + files.length > 3) {
+                alert('最多只能上傳 3 張圖片');
+                return;
+            }
+
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImages.push(file);
+
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="預覽">
+                        <button type="button" class="preview-remove" onclick="removeImage(${uploadedImages.length - 1})">×</button>
+                    `;
+                    previewContainer.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 移除圖片
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            const previewContainer = document.getElementById('imagePreview');
+            previewContainer.children[index].remove();
+        }
+
+        // 點擊圖片放大功能
+        /*const modal = document.getElementById('img-modal');
+        const modalImg = document.getElementById('modal-img');
+        const closeBtn = document.querySelector('.close');
+        const zoomableImgs = document.querySelectorAll('.zoomable-img');
+
+        zoomableImgs.forEach(img => {
+            img.onclick = function () {
+                modal.style.display = "block";
+                modalImg.src = this.src;
+            };
+        });
+
+        closeBtn.onclick = function () {
+            modal.style.display = "none";
+        };*/
+        const modal = document.getElementById('imageModal');
+        window.onclick = function (event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        };
+
+        let replyImages = {};
+
+        // 處理回覆圖片上傳
+        function handleReplyImages(commentId, event) {
+            const files = Array.from(event.target.files);
+            const previewContainer = document.getElementById(`preview-${commentId}`);
+
+            // 初始化該評論的圖片陣列
+            if (!replyImages[commentId]) {
+                replyImages[commentId] = [];
+            }
+
+            // 限制最多 3 張圖片
+            const remainingSlots = 3 - replyImages[commentId].length;
+            const filesToAdd = files.slice(0, remainingSlots);
+
+            if (files.length > remainingSlots) {
+                alert('最多只能上傳 3 張圖片');
+            }
+
+            filesToAdd.forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = {
+                        file: file,
+                        url: e.target.result
+                    };
+                    replyImages[commentId].push(imageData);
+                    displayReplyImages(commentId, previewContainer);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // 清空 input，允許重複選擇相同檔案
+            event.target.value = '';
+        }
+
+        // 顯示回覆圖片預覽
+        function displayReplyImages(commentId, container) {
+            container.innerHTML = '';
+
+            replyImages[commentId].forEach((image, index) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'preview-image-item';
+                previewItem.innerHTML = `
+                    <img src="${image.url}" alt="預覽">
+                    <button type="button" class="preview-remove" onclick="removeReplyImage('${commentId}', ${index})">×</button>
+                `;
+                container.appendChild(previewItem);
+            });
+        }
+
+        // 移除回覆圖片
+        function removeReplyImage(commentId, index) {
+            replyImages[commentId].splice(index, 1);
+            const previewContainer = document.getElementById(`preview-${commentId}`);
+            displayReplyImages(commentId, previewContainer);
+        }
+
+        // 開啟圖片燈箱
+        function openImageModal(src) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = 'block';
+            modalImg.src = src;
+        }
+
+        // 關閉圖片燈箱
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // 載入更多回覆
+        function loadMoreReplies(commentId) {
+            alert(`載入評論 ${commentId} 的更多回覆...`);
+            // 這裡可以用 AJAX 載入更多回覆
+        }
+
+        // ESC 鍵關閉燈箱
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+    </script>
+</body>
+</html>

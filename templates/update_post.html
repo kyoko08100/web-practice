@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>編輯貼文 - Django 應用</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        /* 導航列 */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            height: 70px;
+        }
+
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 100%;
+            margin: 0 auto;
+            height: 70px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .logout-btn {
+            padding: 10px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        /* 側邊欄 */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 70px;
+            width: 260px;
+            height: calc(100vh - 70px);
+            background: white;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 90;
+        }
+
+        .sidebar-section {
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .sidebar-title {
+            padding: 0 20px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            color: #666;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar-link:hover {
+            background: #f8f9ff;
+            color: #667eea;
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .sidebar-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .sidebar-icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* 主要內容 */
+        .main-content {
+            margin-left: 260px;
+            margin-top: 70px;
+            padding: 40px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+            animation: fadeInDown 0.5s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* 表單區塊 */
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            animation: fadeIn 0.5s ease-out 0.2s;
+            animation-fill-mode: both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .form-group label .required {
+            color: #f5576c;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 200px;
+            resize: vertical;
+        }
+
+        .form-hint {
+            font-size: 13px;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        /* 標籤輸入 */
+        .tags-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            min-height: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .tags-input-container:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .tag-remove:hover {
+            opacity: 1;
+        }
+
+        .tag-input {
+            flex: 1;
+            min-width: 150px;
+            border: none;
+            outline: none;
+            padding: 8px;
+            font-size: 15px;
+        }
+
+        /* 圖片上傳 */
+        .image-upload {
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .image-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .image-upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .image-upload input[type="file"] {
+            display: none;
+        }
+
+        .image-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            border: 2px solid #e0e0e0;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .preview-remove:hover {
+            background: rgba(255, 0, 0, 1);
+            transform: scale(1.1);
+        }
+
+        /* 按鈕 */
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 35px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #666;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            border-color: #667eea;
+            color: #667eea;
+            background: #f8f9ff;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-260px);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 20px;
+            }
+
+            .user-info span {
+                display: none;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .form-card {
+                padding: 25px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 89;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    {% include 'nav.html' %}
+
+    <!-- 側邊欄遮罩 -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- 側邊欄 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">主選單</div>
+            <a href="{% url 'dashboard' %}" class="sidebar-link">
+                <span class="sidebar-icon">🏠</span>
+                <span>儀表板</span>
+            </a>
+            <a href="" class="sidebar-link">
+                <span class="sidebar-icon">✍️</span>
+                <span>新增貼文</span>
+            </a>
+            <a href="" class="sidebar-link active">
+                <span class="sidebar-icon">📝</span>
+                <span>所有貼文</span>
+            </a>
+            <a href="" class="sidebar-link">
+                <span class="sidebar-icon">👤</span>
+                <span>個人資料</span>
+            </a>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">系統功能</div>
+            <a href="" class="sidebar-link">
+                <span class="sidebar-icon">⚙️</span>
+                <span>系統設定</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- 主要內容 -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>✍️ 編輯貼文</h1>
+                <p>分享你的想法和創意</p>
+            </div>
+
+            <div class="form-card">
+                <form method="post" action="" enctype="multipart/form-data" id="postForm">
+                    {% csrf_token %}
+                    
+                    <!-- 標題 -->
+                    <div class="form-group">
+                        <label for="title">
+                            貼文標題 <span class="required">*</span>
+                        </label>
+                        {{ form.title }}
+                        <p style="color:red">{{ form.title.errors }}</p>
+                        <div class="form-hint">建議使用簡潔有力的標題，最多 200 字</div>
+                    </div>
+
+                    <!-- 內容 -->
+                    <div class="form-group">
+                        <label for="content">
+                            貼文內容 <span class="required">*</span>
+                        </label>
+                        {{ form.content }}
+                        <p style="color:red">{{ form.content.errors }}</p>
+                        <div class="form-hint">支援 Markdown 格式，可以使用 **粗體**、*斜體* 等語法</div>
+                    </div>
+
+                    <!-- 分類 -->
+                    <div class="form-group">
+                        <label for="category">分類</label>
+                        {{ form.category }}
+                        <p style="color:red">{{ form.category.errors }}</p>
+                    </div>
+
+                    <!-- 標籤 -->
+                    <div class="form-group">
+                        <label>標籤</label>
+                        <div class="tags-input-container" id="tagsContainer">
+                            {{ form.tags }}
+                            <p style="color:red">{{ form.tags.errors }}</p>
+
+                        </div>
+                        <input type="hidden" name="tags" id="tagsHidden">
+                        <div class="form-hint">按 Enter 新增標籤，最多 10 個標籤</div>
+                    </div>
+
+                    <!-- 圖片上傳 -->
+                    <div class="form-group">
+                        <label>上傳圖片</label>
+                        <div class="image-upload" onclick="document.getElementById('id_images').click()">
+                            <div class="image-upload-icon">📷</div>
+                            <div>點擊或拖曳圖片到這裡上傳</div>
+                            <div class="form-hint" style="margin-top: 10px;">支援 JPG、PNG、GIF</div>
+                            {{ form.images }}
+                            <input
+                                type="file"
+                                name="images"
+                                id="id_images"
+                                accept="image/*"
+                                onchange="handleImageUpload(event)"
+                                multiple
+                            >
+                        </div>
+                        <p style="color:red">{{ form.images.errors }}</p>
+                        <input type="hidden" name="delete_images" id="deleteImagesInput" value="">
+                        <div class="image-preview" id="imagePreview">
+                            {% if images %}
+                                {% for image in images %}
+                                    <div class="preview-item">
+                                        <img src="{{ image.image.url }}" alt="預覽">
+                                        <button type="button" class="preview-remove" onclick="removeImage({{ forloop.counter0 }}, {{ image.id }})">×</button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- 可見性
+                    <div class="form-group">
+                        <label>可見性</label>
+                        <select class="form-control" name="visibility">
+                            <option value="public">公開 - 所有人都可以看到</option>
+                            <option value="friends">好友 - 只有好友可以看到</option>
+                            <option value="private">私密 - 只有自己可以看到</option>
+                        </select>
+                    </div>
+                     -->
+                    <!-- 按鈕 -->
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                            取消
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            🚀 發布貼文
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+    <script>
+        let tags = [];
+        let uploadedImages = [];
+        restoreTags();
+        restoreImages();
+
+        // 把tags還原成新增的樣子
+        function restoreTags() {
+            let rawTag = document.getElementById("id_tags").value
+            const tagPattern = /<Tag: (.*?)>/g;
+            let match;
+            // 使用 while 迴圈和 exec() 方法來迭代所有匹配項
+            while ((match = tagPattern.exec(rawTag)) !== null) {
+                // match[1] 包含第一個捕獲組 (.*?) 的內容，即你想要的標籤值
+                tags.push(match[1].trim());
+            }
+            updateTagsDisplay();
+            document.getElementById("id_tags").value = '';
+        }
+
+        function restoreImages() {
+            let images = document.querySelectorAll("div.preview-item img");
+            images.forEach((image, index) => {
+                uploadedImages.push(image);
+            })
+        }
+
+        // 切換側邊欄
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // 處理標籤輸入
+        function handleTagInput(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const input = event.target;
+                const tag = input.value.trim();
+                
+                if (tag && tags.length < 10 && !tags.includes(tag)) {
+                    tags.push(tag);
+                    updateTagsDisplay();
+                    input.value = '';
+                }
+            }
+        }
+
+        // 更新標籤顯示
+        function updateTagsDisplay() {
+            const container = document.getElementById('tagsContainer');
+            const input = document.getElementById('id_tags');
+            
+            // 移除所有現有標籤
+            container.querySelectorAll('.tag').forEach(tag => tag.remove());
+            
+            // 添加新標籤
+            tags.forEach((tag, index) => {
+                const tagElement = document.createElement('div');
+                tagElement.className = 'tag';
+                tagElement.innerHTML = `
+                    ${tag}
+                    <span class="tag-remove" onclick="removeTag(${index})">×</span>
+                `;
+                container.insertBefore(tagElement, input);
+            });
+
+            // 更新隱藏欄位
+            document.getElementById('tagsHidden').value = tags.join(',');
+        }
+
+        // 移除標籤
+        function removeTag(index) {
+            tags.splice(index, 1);
+            updateTagsDisplay();
+        }
+
+        // 處理圖片上傳
+        function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            const previewContainer = document.getElementById('imagePreview');
+
+            if (uploadedImages.length + files.length > 5) {
+                alert('最多只能上傳 5 張圖片');
+                return;
+            }
+
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImages.push(file);
+                    
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="預覽">
+                        <button type="button" class="preview-remove" onclick="removeImage(${uploadedImages.length - 1})">×</button>
+                    `;
+                    previewContainer.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 移除圖片，imageId是刪除原本的照片會帶的，提交表單後要再帶ID回去後端刪掉
+        function removeImage(index, imageId=-1) {
+            uploadedImages.splice(index, 1);
+            const previewContainer = document.getElementById('imagePreview');
+            previewContainer.children[index].remove();
+            if (imageId >= 0) {
+                document.getElementById("deleteImagesInput").value += `${imageId},`;
+            }
+        }
+
+        // 表單提交前驗證
+        document.getElementById('postForm').addEventListener('submit', function(e) {
+            const title = document.getElementById('id_title').value.trim();
+            const content = document.getElementById('id_content').value.trim();
+
+            if (!title || !content) {
+                e.preventDefault();
+                alert('請填寫標題和內容');
+                return;
+            }
+
+            if (content.length < 10) {
+                e.preventDefault();
+                alert('內容至少需要 10 個字');
+                return;
+            }
+        });
+
+        // 自動調整側邊欄
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1024) {
+                document.getElementById('sidebar').classList.remove('active');
+                document.querySelector('.sidebar-overlay').classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

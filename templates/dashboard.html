@@ -486,17 +486,9 @@
 
         <div class="sidebar-section">
             <div class="sidebar-title">內容管理</div>
-            <a href="" class="sidebar-link">
-                <span class="sidebar-icon">📝</span>
-                <span>文章管理</span>
-            </a>
-            <a href="" class="sidebar-link">
+            <a href="{% url "blog:index" %}" class="sidebar-link">
                 <span class="sidebar-icon">🖼️</span>
-                <span>媒體庫</span>
-            </a>
-            <a href="" class="sidebar-link">
-                <span class="sidebar-icon">💭</span>
-                <span>評論管理</span>
+                <span>社群網站</span>
             </a>
             <a href="" class="sidebar-link">
                 <span class="sidebar-icon">📁</span>
@@ -572,9 +564,9 @@
 
             <!-- 活動區域 -->
             <div class="activity-section">
-                <!-- 最近活動 -->
+                <!-- 最近貼文 -->
                 <div class="activity-card">
-                    <h2>最近活動</h2>
+                    <h2>最近貼文</h2>
                     <div class="activity-item">
                         <div class="activity-icon">✅</div>
                         <div class="activity-details">
