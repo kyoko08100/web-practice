@@ -60,7 +60,7 @@
 
         .login-form {
             background: white;
-            padding: 40px 30px;
+            padding: 30px;
         }
 
         .form-group {
@@ -218,8 +218,30 @@
             }
             
             .login-form {
-                padding: 30px 20px;
+                padding: 20px;
             }
+        }
+
+        .alert {
+            padding: 14px 20px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 15px;
+            font-weight: 500;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        .alert-danger {
+            background-color: #fdecea;
+            color: #b71c1c;
+            border-left: 5px solid #f44336;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -233,8 +255,15 @@
         <form class="login-form" method="post" action="{% url 'login' %}">
             {% csrf_token %}
             
+            {% if messages %}
+                <div class="alert alert-danger">
+                    {% for message in messages %}
+                        {{ message }}
+                    {% endfor %}
+                </div>
+            {% endif %}
             <div class="form-group">
-                <label for="username">使用者名稱或電子郵件</label>
+                <label for="username">使用者名稱</label>
                 <input type="text" id="username" name="username" placeholder="請輸入使用者名稱" required>
             </div>
             
@@ -267,11 +296,11 @@
             </div>
         </form>
     </div>
-    {% if messages %}
-      {% for message in messages %}
-        <script>alert("{{ message }}")</script>
-      {% endfor %}
-    {% endif %}
+{#    {% if messages %}#}
+{#      {% for message in messages %}#}
+{#        <script>alert("{{ message }}")</script>#}
+{#      {% endfor %}#}
+{#    {% endif %}#}
     <script>
 
         // 表單提交動畫
