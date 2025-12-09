@@ -354,7 +354,7 @@
 
         .image-preview {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
             gap: 15px;
             margin-top: 20px;
             margin-bottom: 20px;
@@ -596,9 +596,6 @@
                     👍 讚 (<span id="likeCount"> blog.likes_count </span>)
                 </button>
                 <button class="action-btn">
-                    💬 留言 ( blog.comments_count )
-                </button>
-                <button class="action-btn">
                     📤 分享
                 </button>
             </div>
@@ -608,11 +605,12 @@
         <div class="comments-section">
             <h2 id="commentsCount" class="comments-header">💬 留言 ({{ comments.count }})</h2>
 
-
             <!-- 留言表單 -->
             <div class="comment-form">
                 <form id="commentForm" method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
+                    <!-- 關鍵欄位：預設為空 → 代表是主留言 -->
+                    <input type="hidden" name="parent_id" id="parentId" value="">
                     <textarea
                         id="commentContent"
                         class="comment-input"
@@ -629,7 +627,7 @@
                             accept="image/*"
                             multiple
                             style="display: none;"
-                            onchange="handleImageUpload(event)"
+                            onchange="handleReplyImages(0, event)"
                         >
                         <button
                             type="button"
@@ -642,7 +640,7 @@
                     </div>
 
                     <!-- 圖片預覽區 -->
-                    <div class="image-preview" id="imagePreview"></div>
+                    <div class="image-preview" id="preview-0"></div>
                     <button type="submit" class="submit-btn">🚀 發送留言</button>
                 </form>
             </div>
@@ -675,33 +673,33 @@
                                 👍 <span id="like-1">12</span>
                             </button>
                             <button class="action-icon-btn">
-                                💬 <span>3</span>
+                                💬 <span>{{ comment.children.count }}</span>
                             </button>
                         </div>
-
-
                     </div>
+
                     <!-- 回覆輸入框 -->
                     <div class="reply-box" id="reply-box-{{ comment.id }}" style="display: none;">
-{#                        <form method="post" action="{% url 'blog:reply_comment' comment.id %}">#}
-                        <form method="post">
+                        <form id="commentForm" method="POST" enctype="multipart/form-data">
                             {% csrf_token %}
-                            <textarea class="reply-input" name="content" placeholder="回覆 @{{ comment.author.username }}..." required></textarea>
+                            <!-- 關鍵欄位：預設為空 → 代表是主留言 -->
+                            <input type="hidden" name="parent_id" id="parentId" value="{{ comment.id }}">
+                            <textarea class="reply-input" id="subCommentContent" name="content" placeholder="回覆 @{{ comment.author.username }}..." required></textarea>
                             <!-- 圖片上傳按鈕和預覽 -->
                             <div class="reply-image-upload">
                                 <input
                                     type="file"
-                                    id="reply-image-1"
+                                    id="reply-image-{{ comment.id }}"
                                     name="images"
                                     accept="image/*"
                                     multiple
                                     style="display: none;"
-                                    onchange="handleReplyImages(1, event)"
+                                    onchange="handleReplyImages({{ comment.id }}, event)"
                                 >
                                 <button
                                     type="button"
                                     class="btn-upload-image"
-                                    onclick="document.getElementById('reply-image-1').click()"
+                                    onclick="document.getElementById('reply-image-{{ comment.id }}').click()"
                                 >
                                     📷 上傳圖片
                                 </button>
@@ -709,7 +707,7 @@
                             </div>
 
                             <!-- 圖片預覽區 -->
-                            <div class="image-preview" id="preview-1"></div>
+                            <div class="image-preview" id="preview-{{ comment.id }}"></div>
 
                             <div class="reply-actions">
                                 <button type="button" class="btn-cancel" onclick="toggleReplyBox({{ comment.id }})">取消</button>
@@ -717,37 +715,41 @@
                             </div>
                         </form>
                     </div>
-                     <!-- 子評論 2 -->
-                    <div class="comment-replies">
-                        <div class="comment-item reply-item">
-                            <div class="comment-header">
-                                <div class="comment-author">
-                                    <div class="author-avatar" style="width: 32px; height: 32px; font-size: 14px;">C</div>
-                                    <div>
-                                        <div class="author-name">Charlie Liu</div>
-                                        <div class="comment-time">30 分鐘前</div>
+                     <!-- 子評論 -->
+                    <div class="comment-replies" data-comment-id="{{ comment.id }}">
+                        {% for child in comment.children.all %}
+                            <div class="comment-item reply-item">
+                                <div class="comment-header">
+                                    <div class="comment-author">
+                                        <div class="author-avatar" style="width: 32px; height: 32px; font-size: 14px;">{{ child.author.username|first|upper }}</div>
+                                        <div class="author-name">{{ child.author }}</div>
+                                        <div class="comment-time">{{ child.pub_time|date:"Y/m/d H:i" }}</div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="comment-content">
-                                <span class="reply-to">@Bob Chen</span> +1，這個功能確實很實用！
-                            </div>
+                                <div class="comment-content">
+                                    <span class="reply-to">@{{ comment.author }}</span>{{ child.content }}
+                                </div>
 
-                            <!-- 子評論帶圖片 -->
-                            <div class="post-images">
-                                <img src="reply-image.jpg" alt="回覆圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">
-                            </div>
+                                <!-- 子評論帶圖片 -->
+                                {% if child.get_images %}
+                                    <div class="post-images">
+                                        {% for img in child.get_images %}
+                                            <img src="{{ img.image.url }}" class="zoomable-img" alt="留言圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
 
-                            <div class="comment-actions" style="padding-top: 8px;">
-                                <button class="action-icon-btn" onclick="likeComment('1-2')">
-                                    👍 <span id="like-1-2">2</span>
-                                </button>
+                                <div class="comment-actions" style="padding-top: 8px;">
+                                    <button class="action-icon-btn" onclick="likeComment('1-2')">
+                                        👍 <span id="like-1-2">2</span>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        {% endfor %}
                         <!-- 展開更多回覆按鈕 -->
-                        <button class="load-more-replies" onclick="loadMoreReplies(1)">
-                            查看更多 5 則回覆 ▼
-                        </button>
+{#                        <button class="load-more-replies" onclick="loadMoreReplies(1)">#}
+{#                            查看更多 5 則回覆 ▼#}
+{#                        </button>#}
                     </div>
                 {% empty %}
                     <div id="noComment" style="text-align: center; padding: 40px; color: #999;">
@@ -765,6 +767,187 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        let replyImages = {};  // 儲存已上傳的圖片
+
+        // 新增主留言時的HTML
+        function createCommentHTML(data) {
+            let author = data.author
+            let authorIcon = author.charAt(0).toUpperCase()
+            let content = data.content
+            let pubTime = data.pub_time
+            let html = `
+                <div class="comment-item" id="comment-${data.id}">
+                    <div class="comment-header">
+                        <div class="comment-author">
+                            <div class="author-avatar">${authorIcon}</div>
+                            <span class="author-name">${author}</span>
+                            <div class="comment-time">${pubTime}</div>
+                        </div>
+                        <button class="comment-action-btn" onclick="toggleReplyBox(${data.id})">💬 回覆</button>
+                    </div>
+                    <div class="comment-content">${content}</div>
+                `
+            if (data.images.length > 0){
+                html += `<div class="post-images">`
+                data.images.forEach(url => {
+                    html += `<img src="${url}" class="zoomable-img" alt="留言圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">`
+                })
+                html += `</div>`;  // class="post-images"的
+            }
+            html += `<div class="comment-actions">
+                    <button class="action-icon-btn" onclick="likeComment(1)">
+                        👍 <span id="like-1">12</span>
+                    </button>
+                    <button class="action-icon-btn">
+                        💬 <span>3</span>
+                    </button>
+                </div>`;
+
+            html += `</div>`;  // class="comment-item"的
+            // 加入回覆框
+            html += `<div class="reply-box" id="reply-box-${data.id}" style="display: none;">
+                <form id="commentForm" enctype="multipart/form-data">
+                    <input type="hidden" name="parent_id" id="parentId" value="${data.id}">
+                    <textarea class="reply-input" id="subCommentContent" name="content" placeholder="回覆 @${author}..." required></textarea>
+                    <!-- 圖片上傳按鈕和預覽 -->
+                    <div class="reply-image-upload">
+                        <input
+                            type="file"
+                            id="reply-image-${data.id}"
+                            name="commentImages"
+                            accept="image/*"
+                            multiple
+                            style="display: none;"
+                            onchange="handleReplyImages(1, event)"
+                        >
+                        <button
+                            type="button"
+                            class="btn-upload-image"
+                            onclick="document.getElementById('reply-image-${data.id}').click()"
+                        >
+                            📷 上傳圖片
+                        </button>
+                        <span class="image-hint">最多 3 張圖片</span>
+                    </div>
+
+                    <!-- 圖片預覽區 -->
+                    <div class="image-preview" id="preview-${data.id}"></div>
+
+                    <div class="reply-actions">
+                        <button type="button" class="btn-cancel" onclick="toggleReplyBox(${data.id})">取消</button>
+                        <button type="submit" class="btn-submit">發送</button>
+                    </div>
+                </form>
+            </div>`;
+            return html;
+        }
+
+        // 新增子留言時的HTML
+        function createSubcommentHTML(data) {
+            let author = data.author
+            let authorIcon = author.charAt(0).toUpperCase()
+            let content = data.content
+            let pubTime = data.pub_time
+            let parentName = data.parent_name
+            let html = `<div class="comment-item reply-item">
+                <div class="comment-header">
+                    <div class="comment-author">
+                        <div class="author-avatar" style="width: 32px; height: 32px; font-size: 14px;">${authorIcon}</div>
+                        <div class="author-name">${author}</div>
+                        <div class="comment-time">${pubTime}</div>
+                    </div>
+                </div>
+                <div class="comment-content">
+                    <span class="reply-to">@${parentName}</span>${content}
+                </div>`
+
+            if (data.images.length > 0){
+                html += `<div class="post-images">`
+                data.images.forEach(url => {
+                    html += `<img src="${url}" class="zoomable-img" alt="留言圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">`
+                })
+                html += `</div>`;  // class="post-images"的
+            }
+
+            html += `<div class="comment-actions" style="padding-top: 8px;">
+                    <button class="action-icon-btn" onclick="likeComment('1-2')">
+                        👍 <span id="like-1-2">2</span>
+                    </button>
+                </div>
+            </div>`
+            return html;
+        }
+        // 送出留言
+        {#function addFormSubmitEvent(form) {#}
+        document.addEventListener('submit', function(e) {
+            const form = e.target
+            e.preventDefault();
+            const contentTextarea = form.querySelector("[name='content']");
+            const parentId = form.dataset.parent;
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const files = parentId ? replyImages[parentId] : replyImages[0];  // 有parentId時是子留言
+
+            let fd = new FormData();
+            fd.append("content", contentTextarea.value);
+            fd.append("parent_id", parentId);
+
+            // 多張圖片正確加法
+            if (files) {
+                for (let i = 0; i < files.length; i++) {
+                    fd.append("images", files[i].file);
+                }
+            }
+
+            axios.post("{% url 'blog:comments' blog.id %}", fd, {
+                headers: {
+                    "X-CSRFToken": csrftoken,
+                    "Content-Type": "multipart/form-data"
+                }
+            })
+            .then(res => {
+                console.log(res.data.message)
+                const data = res.data;
+                if (document.getElementById("noComment"))
+                    document.getElementById("noComment").style.display = 'none';
+
+                let commentsCountElement = document.getElementById("commentsCount");
+                let commentsCount = document.getElementById("commentsCount").innerHTML.split("(").slice(1);
+                commentsCountElement.innerHTML = `💬 留言 (${parseInt(commentsCount.toString(), 10)+1})`
+
+                // 清掉已上傳的圖片檔
+                if (parentId)
+                    replyImages[parentId] = []
+                else
+                    replyImages[0] = []
+
+                let commentList;
+                let html;
+                if (data.parent_id) {
+                    commentList = document.querySelector(`[data-comment-id="${data.parent_id}"]`);
+                    console.log("新增子評論")
+                    html = createSubcommentHTML(data);
+                }
+                else {
+                    commentList = document.getElementById("commentsList");
+                    console.log("新增主評論")
+                    html = createCommentHTML(data);
+                }
+
+                commentList.innerHTML += html;
+                // 清空輸入框跟圖片預覽框
+                contentTextarea.value = "";
+                form.querySelector(".image-preview").innerHTML = "";
+            })
+            .catch(err => {
+                console.log(err)
+                alert(err.data.error);
+            });
+        })
+        //}
+
+        /*document.querySelectorAll("#commentForm").forEach(form => {
+            addFormSubmitEvent(form);
+        });*/
 
         // 按讚功能
         /*async function likePost() {
@@ -806,74 +989,6 @@
             }, 100);
         });*/
 
-        // 送出留言
-        document.getElementById('commentForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const content = document.getElementById("commentContent").value;
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            const fileInput = document.getElementById("commentImages");
-            let form = new FormData();
-            form.append("content", content);
-            // 多張圖片正確加法
-            if (fileInput) {
-                for (let i = 0; i < fileInput.files.length; i++) {
-                    form.append("images", fileInput.files[i]);
-                }
-            }
-
-            axios.post("{% url 'blog:comments' blog.id %}", form,{
-                headers: {
-                    "X-CSRFToken": csrftoken,
-                    "Content-Type": "multipart/form-data"
-                }
-            })
-            .then(res => {
-                const data = res.data;
-                if (document.getElementById("noComment"))
-                    document.getElementById("noComment").style.display = 'none';
-
-                let commentsCountElement = document.getElementById("commentsCount");
-                let commentsCount = document.getElementById("commentsCount").innerHTML.split("(").slice(1);
-                commentsCountElement.innerHTML = `💬 留言 (${parseInt(commentsCount.toString(), 10)})`
-
-                let commentList = document.getElementById("commentsList");
-                let author = data.author
-                let authorIcon = author.charAt(0).toUpperCase()
-                let content = data.content
-                let pubTime = data.pub_time
-                let html = `
-                    <div class="comment-item">
-                        <div class="comment-header">
-                            <div class="comment-author">
-                                <div class="author-avatar">${authorIcon}</div>
-                                <span class="author-name">${author}</span>
-                                <div class="comment-time">${pubTime}</div>
-                            </div>
-                        </div>
-                        <div class="comment-content">${content}</div>
-                        <button class="comment-action-btn" onclick="replyComment(1)">💬 回覆</button>
-                    `
-                if (data.images.length > 0){
-                    html += `<div class="post-images">`
-                    data.images.forEach(url => {
-                        console.log(url)
-                        html += `<img src="${url}" alt="留言圖片" onclick="openImageModal(this.src)" style="max-width:200px; margin:5px;">`
-                    })
-                    html += `</div>`;  // class="post-images"的
-                }
-                html += `</div>`;  // class="comment-item"的
-
-                commentList.innerHTML += html;
-                // 清空輸入框跟圖片預覽框
-                document.getElementById("commentContent").value = "";
-                document.getElementById("imagePreview").value = "";
-            })
-            .catch(err => {
-                console.log(err)
-                alert(err.data.error);
-            });
-        })
-
         // 切換回覆輸入框
         function toggleReplyBox(commentId) {
             const replyBox = document.getElementById(`reply-box-${commentId}`);
@@ -896,7 +1011,7 @@
         }
 
         // 上傳圖片
-        let uploadedImages = [];
+        /*let uploadedImages = [];
         function handleImageUpload(event) {
             const files = Array.from(event.target.files);
             const previewContainer = document.getElementById('imagePreview');
@@ -925,14 +1040,14 @@
                 };
                 reader.readAsDataURL(file);
             });
-        }
+        }*/
 
         // 移除圖片
-        function removeImage(index) {
+        /*function removeImage(index) {
             uploadedImages.splice(index, 1);
             const previewContainer = document.getElementById('imagePreview');
             previewContainer.children[index].remove();
-        }
+        }*/
 
         // 點擊圖片放大功能
         /*const modal = document.getElementById('img-modal');
@@ -957,8 +1072,6 @@
             }
         };
 
-        let replyImages = {};
-
         // 處理回覆圖片上傳
         function handleReplyImages(commentId, event) {
             const files = Array.from(event.target.files);
@@ -979,6 +1092,7 @@
 
             filesToAdd.forEach(file => {
                 if (!file.type.startsWith('image/')) {
+                    alert('上傳的檔案中有非圖片檔!');
                     return;
                 }
 
@@ -995,7 +1109,7 @@
             });
 
             // 清空 input，允許重複選擇相同檔案
-            event.target.value = '';
+            {#event.target.value = '';#}
         }
 
         // 顯示回覆圖片預覽

@@ -54,3 +54,6 @@ class BlogComment(models.Model):
     def get_images(self):
         ct = ContentType.objects.get_for_model(BlogComment)
         return Image.objects.filter(content_type=ct, object_id=self.id)
+
+    def children(self):
+        return BlogComment.objects.filter(parent=self)

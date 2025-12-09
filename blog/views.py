@@ -63,7 +63,7 @@ def detail(request, blog_id):
     # 取得所有圖片 (GenericForeignKey)
     images = blog.images.all()
     # 評論
-    comments = BlogComment.objects.filter(blog_id=blog_id)
+    comments = BlogComment.objects.filter(blog_id=blog_id, parent=None)
     context = {
         "blog": blog,
         "tags": tags,
@@ -114,6 +114,7 @@ def update_blog(request, blog_id):
         "images": blog.images.all(),
     })
 
+
 def delete_blog(request, blog_id):
     blog = Blog.objects.get(id=blog_id)
     if request.method == "POST":
@@ -122,12 +123,20 @@ def delete_blog(request, blog_id):
     else:
         return JsonResponse({"error": "掛掉了"}, status=400)
 
+
 def create_comments(request, blog_id):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=400)
 
-    blog = get_object_or_404(Blog, id=blog_id)
+    print(f"request.POST: {request.POST}")
+    print(f"request FILES: {request.FILES}")
     content = request.POST.get("content")
+    parent_id = request.POST.get("parent_id")
+
+    parent = None
+    if parent_id.isdigit():
+        parent = get_object_or_404(BlogComment, id=parent_id)
+    blog = get_object_or_404(Blog, id=blog_id)
 
     if not content:
         return JsonResponse({"error": "留言不能為空"}, status=400)
@@ -141,19 +150,24 @@ def create_comments(request, blog_id):
         blog=blog,
         author=request.user,
         content=content,
+        parent=parent,
     )
 
     image_urls = []
     for img in images:
         img_obj = Image.objects.create(content_object=comment, image=img)
         image_urls.append(img_obj.image.url)
-    print(comment.images.all())
+
+
+
     return JsonResponse({
         "message": "success",
         "author": comment.author.username,
         "content": comment.content,
         "pub_time": comment.pub_time.strftime("%Y-%m-%d %H:%M:%S"),
         "images": image_urls,
+        "parent_id": parent.id if parent else None,
+        "parent_name": parent.author.username if parent else None,
     })
 
 def _valid_image(images):
@@ -165,12 +179,6 @@ def _valid_image(images):
     for img in images:
         if not img.content_type.startswith("image/"):
             return f"{img.name} 不是圖片"
-            # form.add_error('images', f"{img.name} 不是圖片")
-            # return form, None
-            # return render (request, "create_post.html", {"form": form})
         if img.size > 5 * 1024 * 1024:
             return f"{img.name} 太大 (最大 5MB)"
-            # form.add_error('images', f"{img.name} 太大 (最大 5MB)")
-            # return form, None
-            # return render (request, "create_post.html", {"form": form})
     return images
