@@ -5,14 +5,15 @@
 ## ✨ 已開發功能
 
 * 基本登入、登出、註冊帳號功能: 透過Celery+Redis實現非同步寄送驗證碼
-* 附近餐廳查詢:透過Google map API 查詢附近餐廳
+* 附近餐廳查詢: 透過Google map API 查詢附近餐廳
 * 抽卡模擬器: 透過模擬抽卡試試運氣
-* 鳴潮抽卡紀錄查詢:透過 API 取得與資料整理
+* 鳴潮抽卡紀錄查詢: 透過 API 取得與資料整理
+* 簡易社群網站: 新增、管理貼文、貼文留言。使用signal實現刪除含圖片之貼文、留言時同時刪除後台圖片檔
 
 ## 📦 環境需求
 
 * Python 3.10+
-* Django 5.x（依你的專案版本為準）
+* Django 5.2
 * 使用 uv 管理虛擬環境
 
 ## 🚀 專案安裝與啟動
@@ -66,6 +67,11 @@ mysite/
 ```dotenv
 SECRET_KEY='your_django_SECRET_KEY'
 GOOGLE_MAPS_API_KEY='your_GOOGLE_MAPS_API_KEY'
+EMAIL_HOST="your_EMAIL_HOST"
+EMAIL_HOST_USER="your_EMAIL_HOST_USER"
+EMAIL_HOST_PASSWORD="your_EMAIL_HOST_PASSWORD"
+CELERY_BROKER_URL="your_CELERY_BROKER_URL"
+CELERY_RESULT_BACKEND="your_CELERY_RESULT_BACKEND"
 DEBUG=True
 ```
 ---
