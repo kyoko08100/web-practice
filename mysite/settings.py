@@ -29,7 +29,7 @@ SECRET_KEY = env("SECRET_KEY")
 GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=False)
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Celery
 CELERY_BROKER_URL = env("CELERY_BROKER_URL")
