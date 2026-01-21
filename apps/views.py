@@ -86,11 +86,11 @@ def send_captcha(request):
     code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
     captcha = ""
     for i in range(6):
-        c = random.randint(0, len(code)-1)
+        c = random.randint(0, len(code) - 1)
         captcha += code[c]
 
     # 寄出郵件
-    send_email.delay(captcha, email)
+    send_email(captcha, email)
 
     # 儲存
     Captcha.objects.create(email=email, code=captcha)
