@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鳴潮成就紀錄</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            height: 100vh;
+            padding-top: 70px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: #111827;
+            border-right: 1px solid #1f2933;
+            overflow-y: auto;
+        }
+
+        .search-box {
+            padding: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 12px 12px 10px;
+            background: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            color: #e5e7eb;
+        }
+
+        .search-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .filters {
+            padding: 0 20px 20px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #1e293b;
+            margin: 0 20px 16px;
+        }
+
+        .category-header {
+            padding: 0 20px 12px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Categories */
+        .categories {
+            padding: 0 12px 20px;
+        }
+
+        .category-item {
+            padding: 14px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            background: #020617;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .category-item:hover {
+            border-color: #334155;
+        }
+
+        .category-item.active {
+            border-color: #6366f1;
+            background: #020617;
+        }
+
+        .category-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .category-stats {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+        }
+
+        .content-wrapper {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .header-title h1 {
+            font-size: 40px;
+            color: #e5e7eb;
+        }
+
+        .header-subtitle {
+            color: #94a3b8;
+        }
+
+        /* Achievements */
+        .achievements {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .achievement-card {
+            padding: 24px;
+            border-radius: 14px;
+            background: #020617;
+            border: 1px solid #1e293b;
+        }
+
+        .achievement-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-left: 24px;
+        }
+
+        /*.achievement-card:hover {
+            border-color: #475569;
+        }*/
+
+        .achievement-card.completed {
+            border-color: #22c55e;
+            background: #020617;
+        }
+
+        .achievement-content {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .achievement-title {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .achievement-desc {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .achievement-link {
+            color: #FFD306;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .achievement-tags {
+            display: flex;
+            gap: 8px;
+        }
+
+        .achievement-tag {
+            background: #1e293b;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+        }
+
+        .achievement-points {
+            font-size: 20px;
+            color: #facc15;
+        }
+
+        .check-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .achievement-card.completed .check-circle {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-text {
+            color: #e9d5ff;
+            font-size: 18px;
+        }
+
+        .categories {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .categories-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            cursor: pointer;
+            background: #6366f1;
+            font-weight: 600;
+        }
+
+        .categories-body {
+            overflow: hidden;
+            transition: max-height 0.35s ease, opacity 0.25s ease;
+            max-height: 1000px;
+            opacity: 1;
+            margin-top: 8px;
+        }
+
+        .categories.collapsed .categories-body {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        .arrow {
+            transition: transform 0.3s ease;
+        }
+
+        .categories.collapsed .arrow {
+            transform: rotate(-90deg);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+{% include "blog_nav.html" %}
+<div class="container">
+    <div class="sidebar">
+        <div class="search-box">
+            <input type="text" id="searchInput" class="search-input" placeholder="搜尋成就...">
+        </div>
+
+        <div class="filters">
+            <div class="filter-option">
+                <input type="checkbox" id="filterAll" name="filter" value="all">
+                <label for="filterAll">隱藏已完成</label>
+            </div>
+            <div class="filter-option">
+                <input type="checkbox" id="filterIncomplete" name="filter" value="incomplete">
+                <label for="filterIncomplete">優先顯示未完成</label>
+            </div>
+            <div class="filter-option">
+                <input type="checkbox" id="filterCompleted" name="filter" value="completed">
+                <label for="filterCompleted">僅顯示已完成</label>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="category-header">
+            <span class="category-title" id="categoryStats">總成就數 0/0</span>
+            <div class="category-buttons">
+                <button class="icon-btn" id="importData">📥匯入</button>
+                <input type="file" id="file-input" accept=".json" style="display:none;">
+                <button class="icon-btn" id="exportData">📥匯出</button>
+            </div>
+        </div>
+
+        <div class="categories" id="categoriesList">
+
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="content-wrapper">
+            <div class="header">
+                <div class="header-title">
+                    <h1 id="aciTitle"></h1>
+                </div>
+                <div class="header-buttons">
+                    <button class="header-btn" id="selectAll">✓全選</button>
+                    <button class="header-btn" id="cancelAll">📥全部取消</button>
+                    <button class="header-btn" id="updateAchi">📥更新成就</button>
+                    {% csrf_token %}
+                </div>
+            </div>
+
+            <div class="achievements" id="achievementsList"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    let achievementsData = {{ achievements|safe }}
+    let achievements_state = {{ achievements_state|safe }}
+
+    let state = {
+        selectIndex: 0,
+        selectedCategory: '索拉漫行',
+        selectedSubCategory: '索拉的大地·瑝瓏',
+        searchTerm: '',
+        filterAll: false,
+        filterIncomplete: false,
+        filterCompleted: false,
+        completed: achievements_state
+    };
+
+    // 檢查瀏覽器中是否有完整的state
+    let local = JSON.parse(localStorage.getItem("state"))
+    if (!local) // 連localStorage['state']都沒有
+        localStorage.setItem("state", JSON.stringify(state));
+    else { // 有localStorage['state']，檢查完整性
+        for (let key in state) {
+            if (!local.hasOwnProperty(key)) {
+                let tempLocal = JSON.parse(localStorage.getItem("state"));
+                tempLocal[key] = state[key];
+                localStorage.setItem("state", tempLocal);
+            } else {  // 如果已經有使用紀錄，更新回state
+                let tempLocal = JSON.parse(localStorage.getItem("state"));
+                state[key] = tempLocal[key];
+            }
+        }
+    }
+
+    function getAchievementName(summary, category, key) {
+        let cateIndex = achievementsData.findIndex(item => item.hasOwnProperty(category));
+        let keyIndex = Object.keys(achievementsData[summary][category]).findIndex(item => item === key);
+        return `${cateIndex}a${keyIndex}a`
+    }
+
+    function getCategoryStats(summary, category, key) {
+        let aciName = getAchievementName(summary, category, key)
+        {#console.log(getAchievementName(summary, category, key));#}
+        let achievements = achievementsData[summary][category][key];
+        let total = achievements.length;
+        let all_a = JSON.parse(localStorage.getItem("state")).completed.filter(item => item.name.startsWith(aciName))
+        let completed = all_a.filter(function (a) {
+            return a.completed;
+        }).length;
+        let percentage = Math.round((completed / total) * 100);
+        return {completed: completed, total: total, percentage: percentage};
+    }
+
+    // 計算成就總數
+    function getTotalStats() {
+        let allAchievements = [];
+        let total = 0;
+        let completed = 0;
+        for (let category in achievementsData)
+            for (let key in achievementsData[category]) {
+                let subCategory = achievementsData[category][key];
+                for (let key in subCategory) {
+                    let value = subCategory[key];
+                    total += value.length;
+                }
+            }
+        return {completed: completed, total: total};
+    }
+
+    // 渲染左邊
+    function renderCategories() {
+        let categoriesList = document.getElementById('categoriesList');
+        let totalStats = getTotalStats();
+        document.getElementById('categoryStats').textContent = '成就分類 ' + totalStats.completed + '/' + totalStats.total;
+
+        categoriesList.innerHTML = '';
+        for (let summary in achievementsData) {
+            for (let category in achievementsData[summary]) {
+
+                let sDiv = document.createElement('div');
+                sDiv.classList.add('categories');
+                sDiv.id = `category-${summary}`;
+                let headerDiv = document.createElement('div');
+                headerDiv.classList.add("categories-header");
+                headerDiv.innerHTML = `📂 ${category}<span class="arrow">▾</span>`
+                headerDiv.addEventListener("click", (e) => {
+                    console.log(headerDiv);
+                    console.log(headerDiv.classList);
+                    sDiv.classList.toggle("collapsed");
+                })
+                sDiv.appendChild(headerDiv);
+                let bodyDiv = document.createElement('div');
+                bodyDiv.classList.add("categories-body");
+                let subCategory = achievementsData[summary][category];
+
+                for (let key in subCategory) {
+                    {#let stats = getCategoryStats(summary, category, key);#}
+                    let div = document.createElement('div');
+                    div.className = 'category-item' + (state.selectedSubCategory === key ? ' active' : '');
+                    div.onclick = (function (s, c, k) {
+                        return function () {
+                            state.selectIndex = s;
+                            state.selectedCategory = c;
+                            state.selectedSubCategory = k;
+                            localStorage.setItem("state", JSON.stringify(state));
+                            if (categoriesList.querySelector('.active'))
+                                categoriesList.querySelector('.active').classList.remove('active');
+                            div.classList.add('active');
+
+                            renderAchievements();
+                        };
+                    })(summary, category, key);
+                    // 左側顯示已完成數量
+                    let achName = getAchievementName(summary, category, key);
+                    let ach = state.completed.filter(item => item.name.startsWith(achName));
+                    let achComplete = ach.filter(item => item.completed).length;
+                    {#let percentage = Math.round((achComplete / ach.length) * 100);#}
+                    {#'<span class="category-percent' + (percentage === 100 ? ' complete' : '') + '">' + percentage + '%</span>' +#}
+
+                    let html = '<div class="category-top">' +
+                        '<div class="category-name">' +
+                        '<span>' + key + '</span>' +
+                        '</div>' +
+                        '<span>⭐ ' + achComplete + '</span>' +
+                        '<span>' + achComplete + '/' + ach.length + '</span>' +
+                        '</div>' +
+                        '<div class="category-stats">' +
+                        '</div>';
+
+                    div.innerHTML = html;
+                    bodyDiv.appendChild(div);
+                }
+                sDiv.appendChild(bodyDiv);
+                categoriesList.appendChild(sDiv);
+            }
+        }
+
+    }
+
+    function renderAchievements() {
+        let achievementsList = document.getElementById('achievementsList');
+        let currentAchievements = achievementsData[state.selectIndex][state.selectedCategory][state.selectedSubCategory];
+        document.getElementById("aciTitle").innerHTML = state.selectedSubCategory;
+
+        let filteredAchievements = currentAchievements.filter(function (achievement) {
+            let matchesSearch = achievement["名稱"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1 ||
+                achievement["描述"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1 ||
+                achievement["版本"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1;
+            {#if (JSON.parse(localStorage.getItem("state")).filterAll)#}
+            let matchesFilter = JSON.parse(localStorage.getItem("state")).filterAll && !achievement.completed
+            {#    (JSON.parse(localStorage.getItem("state")).filterIncomplete && achievement.completed) ||#}
+            {#    (JSON.parse(localStorage.getItem("state")).filterCompleted && !achievement.completed);#}
+            {#return matchesSearch && matchesFilter;#}
+            return matchesSearch;
+        })
+
+        achievementsList.innerHTML = '';
+
+        if (filteredAchievements.length === 0) {
+            let emptyDiv = document.createElement('div');
+            emptyDiv.className = 'empty-state';
+            emptyDiv.innerHTML = '<div class="empty-icon">🔍</div><p class="empty-text">沒有找到匹配的成就</p>';
+            achievementsList.appendChild(emptyDiv);
+            return;
+        }
+
+        for (let i = 0; i < filteredAchievements.length; i++) {
+            let achievement = filteredAchievements[i]; // 原始成就json
+            // 統計是否完成用json
+            let achName = getAchievementName(state.selectIndex, state.selectedCategory, state.selectedSubCategory);
+            let ach = state.completed.filter(item => item.name === `${achName}${i}`)
+            let div = document.createElement('div');
+            div.className = 'achievement-card' + (ach[0].completed ? ' completed' : '');
+
+            {#console.log(ach);#}
+
+            let html = '<div class="achievement-content">' +
+                '<div class="achievement-info">';
+            if (achievement["名稱"].startsWith("「隱藏成就」")) {
+                html += '<h3 class="achievement-title">' + achievement["名稱"].substring(6) + '</h3>' +
+                    '<p class="achievement-desc">' + achievement["描述"] + '</p>' +
+                    '<div class="achievement-tags">' +
+                    '<span class="achievement-tag">隱藏</span>'
+            } else {
+                html += '<h3 class="achievement-title">' + achievement["名稱"] + '</h3>' +
+                    '<p class="achievement-desc">' + achievement["描述"] + '</p>' +
+                    '<p class="achievement-link">' + "影片連結：" +
+                    `<a href="" target="_blank" class="achievement-link">連結</a>` +
+                    '</p>' +
+                    '<div class="achievement-tags">'
+            }
+            html += '<span class="achievement-tag">' + achievement["版本"] + '</span>' +
+                '</div>' +
+                '</div>' +
+                '<div class="achievement-right">' +
+                '<span class="achievement-points">' + achievement["獎勵"] + ' ⭐</span>' +
+                '<div class="check-circle">' + (ach[0].completed ? '✓' : '') + '</div>' +
+                '</div>' +
+                '</div`>';
+
+            div.innerHTML = html;
+            div.querySelector(".check-circle").onclick = (function () {
+                return function () {
+                    ach[0].completed = !ach[0].completed;
+                    localStorage.setItem("state", JSON.stringify(state));
+                    render();
+                };
+            })();
+            achievementsList.appendChild(div);
+        }
+    }
+
+    function render() {
+        renderCategories();
+        renderAchievements();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', function (e) {
+        state.searchTerm = e.target.value;
+        localStorage.setItem("state", JSON.stringify(state));
+        render();
+    });
+
+    let filterRadios = document.querySelectorAll('input[name="filter"]');
+    for (let i = 0; i < filterRadios.length; i++) {
+        filterRadios[i].addEventListener('change', function (e) {
+            state.filterStatus = e.target.value;
+            localStorage.setItem("state", JSON.stringify(state));
+            render();
+        });
+    }
+
+    // 匯出
+    document.getElementById("exportData").addEventListener("click", () => {
+        // 從 localStorage 取資料
+        const data = JSON.parse(localStorage.getItem("state"));
+        const achiData = data.completed
+
+        console.log(achiData);
+        if (!achiData) {
+            alert("localStorage 沒有資料！");
+            return;
+        }
+
+        // 轉成 Blob
+        const jsonStr = JSON.stringify(achiData, null, 2); // JSON轉字串
+        const blob = new Blob([jsonStr], {type: "application/json"});
+
+        // 建立下載用的 URL
+        const url = URL.createObjectURL(blob);
+
+        // 建立臨時 a 標籤，觸發下載
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "achievements.json"; // 下載檔名
+        document.body.appendChild(a);
+        a.click();
+
+        // 清理
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    const uploadBtn = document.getElementById("importData");
+    const fileInput = document.getElementById("file-input");
+
+    uploadBtn.addEventListener("click", () => {
+        fileInput.click(); // 點按鈕就打開檔案選擇框
+    });
+
+    // 匯入
+    fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const fileReader = new FileReader();
+
+        fileReader.onload = (event) => {
+            try {
+                // 1️⃣ 解析 JSON
+                const importedData = JSON.parse(event.target.result);
+
+                // 2️⃣ 檢查格式
+                if (!Array.isArray(importedData) && typeof importedData !== 'object') {
+                    alert("檔案格式不正確！");
+                    return;
+                }
+
+                // 3️⃣ 更新 localStorage
+                const stateStr = localStorage.getItem("state");
+                let stateObj = stateStr ? JSON.parse(stateStr) : {};
+                stateObj.completed = importedData; // 覆蓋之前的 completed
+                localStorage.setItem("state", JSON.stringify(stateObj));
+                state.completed = importedData;
+
+                alert("匯入完成！");
+                render();
+            } catch (err) {
+                console.error(err);
+                alert("JSON 解析失敗！");
+            }
+        };
+        fileInput.value = "";
+        fileReader.readAsText(file);
+    });
+
+    // 全選
+    document.getElementById("selectAll").addEventListener("click", () => {
+        const achis = document.querySelectorAll(".achievement-card")
+        achis.forEach(achi => {
+            if (!achi.classList.contains('completed')) {
+                const circle = achi.querySelector(".check-circle")
+                circle.click();
+            }
+        })
+    });
+
+    // 全部取消
+    document.getElementById("cancelAll").addEventListener("click", () => {
+        const achis = document.querySelectorAll(".achievement-card")
+        achis.forEach(achi => {
+            if (achi.classList.contains('completed')) {
+                const circle = achi.querySelector(".check-circle")
+                circle.click();
+            }
+        })
+    });
+
+    // 更新成就
+    const updateBtn = document.getElementById("updateAchi");
+
+    updateBtn.addEventListener("click", () => {
+        updateBtn.disabled = true;
+        updateBtn.innerHTML = "更新中...";
+        let updateUrl = "{% url 'update_achievements' %}";
+        axios.get(updateUrl, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        }).then(response => {
+            if (response.status === 200) {
+                achievementsData = JSON.parse(response.data.achievements);
+                alert("更新完成!")
+                render();
+                updateBtn.innerHTML = "📥更新成就";
+                updateBtn.disabled = false;
+            }
+        });
+    });
+
+    render();
+
+</script>
+</body>
+</html>
