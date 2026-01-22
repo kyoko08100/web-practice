@@ -1,4 +1,17 @@
 <!-- 導航列 -->
+<style>
+    .btn-link {
+        text-decoration: none; /* 移除底線 */
+        color: inherit; /* 繼承父層顏色 */
+    }
+
+    /* 避免 hover / visited 變色 */
+    .btn-link:hover,
+    .btn-link:visited,
+    .btn-link:active {
+        color: inherit;
+    }
+</style>
 <nav class="navbar">
     <div class="navbar-content">
         <div style="display: flex; align-items: center; gap: 15px;">
@@ -10,16 +23,30 @@
         </div>
         <div class="user-section">
             <div class="user-info">
-                <div class="avatar">{{ request.user.username|first|upper }}</div>
+                <div class="avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
                 <div>
-                    <div style="font-weight: 600;">{{ request.user.username }}</div>
+                    <div style="font-weight: 600;">
+                        {% if request.user.username != "" %}
+                            {{ request.user.username }}
+                        {% else %}
+                            未登入
+                        {% endif %}
+                    </div>
                     <div style="font-size: 13px; opacity: 0.9;">{{ request.user.email }}</div>
                 </div>
             </div>
-            <form method="post" action="{% url 'logout' %}" style="margin: 0;">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn">登出</button>
-            </form>
+            {% if user.is_authenticated %}
+                <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">登出</button>
+                </form>
+            {% else %}
+                <button type="button" class="logout-btn">
+                    <a href="{% url 'login' %}" class="btn-link">登入</a>
+                </button>
+            {% endif %}
         </div>
     </div>
 </nav>

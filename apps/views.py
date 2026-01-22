@@ -24,10 +24,12 @@ from django.conf import settings
 
 from .models import Captcha
 from .task import send_email
+from .utils.achievement import get_achievements
 
 
 def index(request):
-    return redirect('/login')
+    return redirect('/dashboard')
+
 
 def login_view(request):
     if request.method == "GET":
@@ -42,6 +44,7 @@ def login_view(request):
             messages.error(request, "帳號或密碼錯誤")
             return render(request, "login.html")
     return render(request, "login.html")
+
 
 def register(request):
     if request.method == "GET":
@@ -68,6 +71,7 @@ def register(request):
             return render(request, "register.html", {"form": form})
     else:
         return render(request, "register.html")
+
 
 def send_captcha(request):
     email = request.POST.get("email")
@@ -97,6 +101,7 @@ def send_captcha(request):
 
     return JsonResponse({"message": "驗證碼已寄出"})
 
+
 @login_required(login_url="/login")
 def kuro_login(request):
     if request.method == "POST":
@@ -106,13 +111,15 @@ def kuro_login(request):
         return redirect("/dashboard")
     return render(request, "kuro_login.html")
 
+
 def logout_view(request):
     logout(request)
     return redirect('/login')
 
-@login_required(login_url="/login")
+
 def dashboard(request):
     return render(request, "dashboard.html")
+
 
 @login_required(login_url="/login")
 def restaurant_finder(request):
@@ -121,18 +128,27 @@ def restaurant_finder(request):
     }
     return render(request, 'restaurant_finder.html', context)
 
-@login_required(login_url="/login")
+
 def gacha_simulator(request):
     return render(request, 'gacha.html')
 
-@login_required(login_url="/login")
-async def gacha_history(request):
+
+def gacha_history(request):
     if request.method == "GET":
         return render(request, 'gacha_history_viewer.html')
     return render(request, 'gacha_history_viewer.html')
 
+
 async def get_gacha_history(request):
     log_file = request.FILES.get("log_file")
+    pool_type = request.POST.get("pool_type")
+
+    try:
+        pool_type = int(pool_type)
+    except Exception:
+        return JsonResponse({"error": "錯誤的卡池"})
+    if pool_type < 1 or pool_type > 9:
+        return JsonResponse({"error": "錯誤的卡池"})
 
     # 如果使用者傳 JSON，就用它
     if log_file.content_type == "application/json":
@@ -181,20 +197,59 @@ async def get_gacha_history(request):
                 key, value = param.split('=')
                 data[key] = value
             client = APIClient()
-            result = await client.gacha_record(data['player_id'], data['record_id'], WuWaBanner.FEATURED_RESONATOR, WuWaServer.ASIA, Lang.CHINESE_TRADITIONAL)
+            result = await client.gacha_record(data['player_id'], data['record_id'], WuWaBanner(pool_type),
+                                               WuWaServer.ASIA, Lang.CHINESE_TRADITIONAL)
+
             # 沒有返回資料
             if not result:
-                return JsonResponse({"error": "沒有找到參數或請求token已過期，請開啟遊戲中的喚取介面後，再將Client.log上傳"})
-            gacha_data = [{"name": r.get("name"), "rarity": r.get("qualityLevel"), "time": r.get("time")} for r in result]
+                if isinstance(result, list) and len(result) == 0:
+                    return JsonResponse(
+                        {"error": "暫無資料"})
+                return JsonResponse(
+                    {"error": "沒有找到參數或請求token已過期，請開啟遊戲中的喚取介面後，再將Client.log上傳"})
+            gacha_data = [{"name": r.get("name"), "rarity": r.get("qualityLevel"), "time": r.get("time")} for r in
+                          result]
             # 計算已墊抽數
-            count = 0
+            count = 1
             gacha_list = []
-            for r in result:
-                if r.get("qualityLevel") == 5:
+            for data in reversed(gacha_data):
+                if data.get("rarity") == 5:
                     gacha_list.append(count)
-                    count = 1
-                else:
-                    count += 1
-        return JsonResponse({"result": gacha_data, "gachaList": gacha_list}, safe=False, json_dumps_params={"ensure_ascii": False})
+                    count = 0
+                count += 1
+            gacha_list.append(count - 1)  # 最後還沒出五星的抽數
+        return JsonResponse({"result": gacha_data, "gachaList": gacha_list[::-1]}, safe=False,
+                            json_dumps_params={"ensure_ascii": False})
 
 
+def achievement_record(request):
+    achievements = json.load(open('achievements.json', 'r'))
+    achievements_state = json.load(open('achievements_state.json', 'r'))
+    if not achievements:
+        achievements = get_achievements()
+    # json_file = open('achievements_state.json', 'r')
+    # d = json.load(json_file)
+    # new_a = []
+    # for n1, four in enumerate(d):
+    #     for n2, (key, value) in enumerate(four.items()):
+    #         for n3, (k, v) in enumerate(value.items()):
+    #             for n4, aci in enumerate(v):
+    #                 new_d = {
+    #                     "name": f"{n1}a{n3}a{n4}",
+    #                     "completed": False
+    #                 }
+    #                 new_a.append(new_d)
+    # with open("achievements_state.json", "w", encoding="utf-8") as f:
+    #     json.dump(new_a, f, ensure_ascii=False, indent=2)
+    context = {
+        'achievements': json.dumps(achievements, ensure_ascii=False),
+        'achievements_state': json.dumps(achievements_state, ensure_ascii=False),
+    }
+    return render(request, "achievement_record.html", context)
+
+
+def update_achievements(request):
+    get_achievements()
+    achievements = json.load(open('achievements.json', 'r'))
+    return JsonResponse({"achievements": json.dumps(achievements, ensure_ascii=False)}, safe=False,
+                        json_dumps_params={"ensure_ascii": False})

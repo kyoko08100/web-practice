@@ -33,6 +33,8 @@ urlpatterns = [
     path('gacha/', views.gacha_simulator, name='gacha'),
     path('gacha-history/', views.gacha_history, name='gacha_history'),
     path('api/gacha-history/', views.get_gacha_history, name='get_gacha_history'),
+    path('achievement_record/', views.achievement_record, name='achievement_record'),
+    path('update_achievements/', views.update_achievements, name='update_achievements'),
     path('blog/', include('blog.urls')),
 
 ]

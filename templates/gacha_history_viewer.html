@@ -21,6 +21,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
+            padding-top: 70px;
         }
 
         .header {
@@ -391,7 +392,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-text {
@@ -476,7 +479,7 @@
             border-radius: 20px;
         }
 
-        .action-btn:hover{
+        .action-btn:hover {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
@@ -554,183 +557,186 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📜 抽卡紀錄查詢</h1>
-            <p>查詢你的喚取歷史紀錄</p>
-        </div>
+{% include 'blog_nav.html' %}
+<div class="container">
+    <div class="header">
+        <h1>📜 抽卡紀錄查詢</h1>
+        <p>查詢你的喚取歷史紀錄</p>
+    </div>
 
-        <!-- 查詢區塊 -->
-        <div class="search-section">
-            <h2>🔍 查詢設定</h2>
-            
-            <form id="searchForm" method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-{#                    <div class="input-group">#}
-{#                        <label for="server">伺服器區域 *</label>#}
-{#                        <select id="server" required>#}
-{#                            <option value="">請選擇</option>#}
-{#                            <option value="asia">亞洲 (Asia)</option>#}
-{#                            <option value="cn_gf01">天空島 (CN)</option>#}
-{#                            <option value="cn_qd01">世界樹 (CN)</option>#}
-{#                            <option value="os_usa">美洲 (America)</option>#}
-{#                            <option value="os_euro">歐洲 (Europe)</option>#}
-{#                            <option value="os_cht">TW/HK/MO</option>#}
-{#                        </select>#}
-{#                    </div>#}
-{#                </div>#}
-{##}
-{#                <div class="input-group">#}
-{#                    <label for="authkey">授權金鑰 (AuthKey) - 選填</label>#}
-{#                    <input#}
-{#                        type="text"#}
-{#                        id="authkey"#}
-{#                        placeholder="從遊戲日誌中取得的授權金鑰（可選）"#}
-{#                    >#}
-{#                </div>#}
+    <!-- 查詢區塊 -->
+    <div class="search-section">
+        <h2>🔍 查詢設定</h2>
 
-                <!-- 檔案上傳區域 -->
-                <div class="form-group">
-                    <label for="fileInput">上傳 Client.log</label>
-                    <input
+        <form id="searchForm" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="input-group">
+                <label for="poolType">喚取類型 *</label>
+                <select id="poolType" required>
+                    <option value="">請選擇</option>
+                    <option value="1">角色活動喚取(限定角色池)</option>
+                    <option value="2">武器活動喚取(限定武器池)</option>
+                    <option value="3">角色常駐喚取(常駐角色池)</option>
+                    <option value="4">武器常駐喚取(武器角色池)</option>
+                    <option value="5">新手喚取</option>
+                    <option value="6">新手自選喚取</option>
+                    <option value="7">新手自選喚取(感恩定向喚取)</option>
+                    {#                    <option value="8">角色新旅喚取</option>#}
+                    {#                    <option value="9">武器新旅喚取</option>#}
+                </select>
+            </div>
+
+            <!-- 檔案上傳區域 -->
+            <div class="form-group">
+                <label for="fileInput">上傳 Client.log</label>
+                <input
                         type="file"
                         id="fileInput"
                         name="file"
                         accept=".log,.json"
                         onchange="handleFileUpload(event)"
                         style="display: none;"
-                    >
+                >
 
-                    <!-- 未上傳時顯示 -->
-                    <div
+                <!-- 未上傳時顯示 -->
+                <div
                         id="uploadArea"
                         class="file-upload"
                         onclick="document.getElementById('fileInput').click()"
                         ondragover="handleDragOver(event)"
                         ondragleave="handleDragLeave(event)"
                         ondrop="handleDrop(event)"
-                    >
-                        <div class="file-upload-icon">📁</div>
-                        <div style="font-size: 15px; color: #333; margin-bottom: 5px;">點擊或拖曳檔案到這裡上傳</div>
-                        <div class="form-hint">支援 .log 和 .json 檔案</div>
-                    </div>
-
-                    <!-- 已上傳檔案顯示 -->
-                    <div id="uploadedFile" style="display: none;"></div>
+                >
+                    <div class="file-upload-icon">📁</div>
+                    <div style="font-size: 15px; color: #333; margin-bottom: 5px;">點擊或拖曳檔案到這裡上傳</div>
+                    <div class="form-hint">支援 .log 和 .json 檔案</div>
                 </div>
 
-                <button type="submit" class="search-btn" id="searchBtn">
-                    🔍 查詢抽卡紀錄(國際服)
-                </button>
+                <!-- 已上傳檔案顯示 -->
+                <div id="uploadedFile" style="display: none;"></div>
+            </div>
 
-                <div class="info-box">
-                    <strong>💡 如何取得 Client.log？</strong>
-                    1. 登入遊戲內 → 喚取 → 按下查詢喚取紀錄 <br>
-                    2. 進入遊戲安裝位置資料夾 → 搜尋Client.log
-                </div>
-            </form>
+            <button type="submit" class="search-btn" id="searchBtn">
+                🔍 查詢抽卡紀錄(國際服)
+            </button>
+
+            <div class="info-box">
+                <strong>💡 如何取得 Client.log？</strong>
+                1. 登入遊戲內 → 喚取 → 按下查詢喚取紀錄 <br>
+                2. 進入遊戲安裝位置資料夾 → 搜尋Client.log
+            </div>
+        </form>
+    </div>
+
+    <div class="gacha-list" id="gachaContainer" style="display: none;">
+        <!-- 各五星抽數 -->
+    </div>
+
+    <!-- 統計資訊 -->
+    <div class="stats-grid" id="statsSection" style="display: none;">
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-label">總抽卡次數</div>
+            <div class="stat-value" id="totalCount">0</div>
         </div>
-
-        <div class="gacha-list" id="gachaContainer" style="display: none;">
-            <!-- 各五星抽數 -->
+        <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-label">三星數量</div>
+            <div class="stat-value" id="star3">0</div>
         </div>
-
-        <!-- 統計資訊 -->
-        <div class="stats-grid" id="statsSection" style="display: none;">
-            <div class="stat-card">
-                <div class="stat-icon">📊</div>
-                <div class="stat-label">總抽卡次數</div>
-                <div class="stat-value" id="totalCount">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⭐</div>
-                <div class="stat-label">三星數量</div>
-                <div class="stat-value" id="star3">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">💜</div>
-                <div class="stat-label">四星數量</div>
-                <div class="stat-value" id="star4">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">🌟</div>
-                <div class="stat-label">五星數量</div>
-                <div class="stat-value" id="star5">0</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">💜</div>
+            <div class="stat-label">四星數量</div>
+            <div class="stat-value" id="star4">0</div>
         </div>
-
-
-        <div class="history-section" id="historySection" style="display: none;">
-            <div class="history-header">
-                <h2>喚取紀錄</h2>
-                <div class="filter-tabs">
-                    <button class="filter-tab active" onclick="filterByRarity('all')">全部</button>
-                    <button class="filter-tab" onclick="filterByRarity(5)">五星 ⭐</button>
-                    <button class="filter-tab" onclick="filterByRarity(4)">四星 💜</button>
-                    <button class="filter-tab" onclick="filterByRarity(3)">三星</button>
-                </div>
-            </div>
-            <!-- 分頁控制 -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div style="color: #666; font-size: 14px;">
-                    顯示第 <span id="pageStart">1</span>-<span id="pageEnd">10</span> 筆，共 <span id="totalRecords">0</span> 筆
-                </div>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="filter-tab" onclick="previousPage()" id="prevBtn" style="padding: 8px 16px;">
-                        ← 上一頁
-                    </button>
-                    <span style="color: #666; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                        第
-                        <input
-                            type="number"
-                            id="pageInput"
-                            oninput="goToPage()"
-                            style="width: 50px; padding: 5px 8px; border: 2px solid #e0e0e0; border-radius: 6px; text-align: center; font-size: 14px;"
-                        >
-                        / <span id="totalPages">1</span> 頁
-                    </span>
-                    <button class="filter-tab" onclick="nextPage()" id="nextBtn" style="padding: 8px 16px;">
-                        下一頁 →
-                    </button>
-                </div>
-            </div>
-
-            <!-- 資料列表 -->
-            <div class="history-list" id="historyList">
-                <!-- 紀錄將在這裡動態生成 -->
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">🌟</div>
+            <div class="stat-label">五星數量</div>
+            <div class="stat-value" id="star5">0</div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script>
-        let currentPage = 1;
-        const itemsPerPage = 5;
-        let currentFilter = 'all';
-        let logResult;
-        let gachaList;
-        let history;
-        let indexList;
-        let charName;
 
-        fetch('/static/json/character.json')
-            .then(response => response.json())
-            .then(data => {
-                charName = data;
+    <div class="history-section" id="historySection" style="display: none;">
+        <div class="history-header">
+            <h2>喚取紀錄</h2>
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterByRarity('all')">全部</button>
+                <!--
+                <button class="filter-tab" onclick="filterByRarity(5)">五星 ⭐</button>
+                <button class="filter-tab" onclick="filterByRarity(4)">四星 💜</button>
+                <button class="filter-tab" onclick="filterByRarity(3)">三星</button>
+                -->
+            </div>
+        </div>
+        <!-- 分頁控制 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="color: #666; font-size: 14px;">
+                顯示第 <span id="pageStart">1</span>-<span id="pageEnd">10</span> 筆，共 <span id="totalRecords">0</span>
+                筆
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="filter-tab" onclick="previousPage()" id="prevBtn" style="padding: 8px 16px;">
+                    ← 上一頁
+                </button>
+                <span style="color: #666; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        第
+                        <input
+                                type="number"
+                                id="pageInput"
+                                oninput="goToPage()"
+                                style="width: 50px; padding: 5px 8px; border: 2px solid #e0e0e0; border-radius: 6px; text-align: center; font-size: 14px;"
+                        >
+                        / <span id="totalPages">1</span> 頁
+                    </span>
+                <button class="filter-tab" onclick="nextPage()" id="nextBtn" style="padding: 8px 16px;">
+                    下一頁 →
+                </button>
+            </div>
+        </div>
+
+        <!-- 資料列表 -->
+        <div class="history-list" id="historyList">
+            <!-- 紀錄將在這裡動態生成 -->
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    let currentPage = 1;
+    const itemsPerPage = 5;
+    let currentFilter = 'all';
+    let logResult;
+    let gachaList;
+    let history;
+    {#let count;  // 計算抽數#}
+    {#let countIndex = 0;  // 記錄count當前是算到第幾個gachaList[countIndex]#}
+    let displayList;  // 顯示用list，因為每頁都是即時渲染
+    let charName;
+
+    fetch('/static/json/get_image.json')
+        .then(response => response.json())
+        .then(data => {
+            charName = data;
         });
 
-        // 提交查詢表單
-        document.getElementById("searchForm").addEventListener("submit", function(e){
-            e.preventDefault();
+    // 提交查詢表單
+    document.getElementById("searchForm").addEventListener("submit", function (e) {
+        e.preventDefault();
 
+
+        const fileInput = document.getElementById("fileInput");
+        if (fileInput.files && fileInput.files[0]) {
             // 顯示載入中
             showLoading();
-            const fileInput = document.getElementById("fileInput");
             // 取得 csrftoken
             const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const pool_type = document.getElementById("poolType").value;
             const formData = new FormData();
 
             formData.append("log_file", fileInput.files[0]);
+            formData.append("pool_type", pool_type);
 
             axios.post("/api/gacha-history/", formData, {
                 headers: {
@@ -738,89 +744,106 @@
                     "Content-Type": "multipart/form-data"
                 }
             })
-            .then(res => {
-                if (res.data.error) {
-                    document.getElementById('historyList').innerHTML = "";
-                    document.getElementById('statsSection').style.display = "none";
-                    document.getElementById('historySection').style.display = "none";
+                .then(res => {
+                    if (res.data.error) {
+                        document.getElementById('historyList').innerHTML = "";
+                        document.getElementById('gachaContainer').style.display = "none";
+                        document.getElementById('statsSection').style.display = "none";
+                        document.getElementById('historySection').style.display = "none";
 
-                    setTimeout(() => {
-                        removeFile()
-                        alert(res.data.error);
-                    }, 50);
-                    return ;
-                }
-                logResult = res.data.result
-                history = logResult
-                gachaList = res.data.gachaList
-                indexList = []
-                updateStats();
-                displayHistory();
-                createCard();
-            })
-            .catch(err => {
-                console.log(err);
-            });
-        });
+                        setTimeout(() => {
+                            removeFile()
+                            alert(res.data.error);
+                        }, 50);
+                        return;
+                    }
+                    logResult = res.data.result
+                    history = logResult
+                    gachaList = res.data.gachaList
+                    displayList = calcDisplayList(gachaList);
+                    updateStats();
+                    displayHistory();
+                    createCard();
+                })
+                .catch(err => {
+                    console.log(err);
+                });
+        }
+    });
+
+    function calcDisplayList(gList) {
+        let index = 0;
+        let count = gList[index];
+        let l = [];
+        while (index < gList.length) {
+            l.push(count)
+            count--;
+            if (count === 0) {
+                index++;
+                count = gList[index];
+            }
+        }
+        return l;
+    }
 
 
-            // 顯示載入中
-            function showLoading() {
-                const historySection = document.getElementById('historySection');
-                const statsSection = document.getElementById('statsSection');
+    // 顯示載入中
+    function showLoading() {
+        const historySection = document.getElementById('historySection');
+        const statsSection = document.getElementById('statsSection');
 
-                statsSection.style.display = 'grid';
-                historySection.style.display = 'block';
+        statsSection.style.display = 'grid';
+        historySection.style.display = 'block';
 
-                document.getElementById('historyList').innerHTML = `
+        document.getElementById('historyList').innerHTML = `
                     <div class="loading">
                         <div class="loading-spinner"></div>
                         <div class="loading-text">正在查詢紀錄，請稍候...</div>
                     </div>
                 `;
-            }
+    }
 
-            // 顯示當前頁面的紀錄
-            function displayHistory() {
-                currentPage = 1;
-                renderPage();
-            }
+    // 顯示當前頁面的紀錄
+    function displayHistory() {
+        currentPage = 1;
+        renderPage();
+    }
 
-            // 渲染當前頁面
-            function renderPage() {
-                const historyList = document.getElementById('historyList');
-                const startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
-                const pageData = history.slice(startIndex, endIndex);
-                const totalPages = Math.ceil(history.length / itemsPerPage);
+    // 渲染當前頁面
+    function renderPage() {
+        const historyList = document.getElementById('historyList');
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const pageData = history.slice(startIndex, endIndex);
+        const totalPages = Math.ceil(history.length / itemsPerPage);
 
-                // 更新分頁資訊
-                document.getElementById('pageStart').textContent = history.length > 0 ? startIndex + 1 : 0;
-                document.getElementById('pageEnd').textContent = Math.min(endIndex, history.length);
-                document.getElementById('totalRecords').textContent = history.length;
-                document.getElementById('pageInput').value = currentPage;
-                document.getElementById('totalPages').textContent = totalPages;
+        // 更新分頁資訊
+        document.getElementById('pageStart').textContent = history.length > 0 ? startIndex + 1 : 0;
+        document.getElementById('pageEnd').textContent = Math.min(endIndex, history.length);
+        document.getElementById('totalRecords').textContent = history.length;
+        document.getElementById('pageInput').value = currentPage;
+        document.getElementById('totalPages').textContent = totalPages;
 
-                // 更新按鈕狀態
-                document.getElementById('prevBtn').disabled = currentPage === 1;
-                document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        // 更新按鈕狀態
+        document.getElementById('prevBtn').disabled = currentPage === 1;
+        document.getElementById('nextBtn').disabled = currentPage >= totalPages;
 
-                // 如果沒有資料
-                if (history.length === 0) {
-                    historyList.innerHTML = `
+        // 如果沒有資料
+        if (history.length === 0) {
+            historyList.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-icon">😔</div>
                             <h3>沒有資料</h3>
                             <p>請重新嘗試</p>
                         </div>
                     `;
-                    return;
-                }
+            return;
+        }
 
-                // 渲染資料
-                let html = '';
-                pageData.forEach((item, index) => {
-                    html += `
+        // 渲染資料
+        let html = '';
+        pageData.forEach((item, index) => {
+            html += `
                         <div class="history-item" style="animation-delay: 0.05s">
 
                             <div class="item-details">
@@ -832,214 +855,208 @@
                                 ${'⭐'.repeat(item.rarity)}
                             </div>
                     `;
-                    let count;
-                    if (indexList.length) {
-                        count = gachaList[indexList[startIndex + index]]
-                    } else {
-                        count = gachaList[startIndex + index]
-                    }
-                    if (item.rarity === 5) {
-                        html += `
+
+            if (item.rarity === 5) {
+                html += `
                             <div class="item-count">
-                                第 ${count} 抽出金
+                                第 ${displayList[startIndex + index]} 抽出金
                             </div>
                         </div>
                         `;
-
-                    }
-                    else {
-                        html += `
+            } else {
+                html += `
                             <div class="item-count">
-                                已墊 ${count} 抽
+                                已墊 ${displayList[startIndex + index]} 抽
                             </div>
                         </div>
                         `;
-                    }
-                });
-                historyList.innerHTML = html;
-                historyList.scrollTop = 0; // 滾動到頂部
             }
+        });
+        historyList.innerHTML = html;
+        historyList.scrollTop = 0; // 滾動到頂部
+    }
 
-            // 上一頁
-            function previousPage() {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderPage();
-                }
-            }
+    // 上一頁
+    function previousPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            renderPage();
+        }
+    }
 
-            // 下一頁
-            function nextPage() {
-                const totalPages = Math.ceil(history.length / itemsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderPage();
-                }
-            }
+    // 下一頁
+    function nextPage() {
+        const totalPages = Math.ceil(history.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderPage();
+        }
+    }
 
-            // 跳轉到指定頁面
-            function goToPage() {
-                const input = document.getElementById('pageInput');
-                const totalPages = Math.ceil(history.length / itemsPerPage);
-                let targetPage = parseInt(input.value);
+    // 跳轉到指定頁面
+    function goToPage() {
+        const input = document.getElementById('pageInput');
+        const totalPages = Math.ceil(history.length / itemsPerPage);
+        let targetPage = parseInt(input.value);
 
-                // 驗證輸入
-                if (isNaN(targetPage) || targetPage < 1) {
-                    targetPage = 1;
-                } else if (targetPage > totalPages) {
-                    targetPage = totalPages;
-                }
+        // 驗證輸入
+        if (isNaN(targetPage) || targetPage < 1) {
+            targetPage = 1;
+        } else if (targetPage > totalPages) {
+            targetPage = totalPages;
+        }
 
-                currentPage = targetPage;
-                renderPage();
-            }
+        currentPage = targetPage;
+        renderPage();
+    }
 
-            // 篩選稀有度
-            function filterByRarity(rarity) {
-                document.querySelectorAll('.filter-tab').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                event.target.classList.add('active');
+    // 篩選稀有度
+    function filterByRarity(rarity) {
+        document.querySelectorAll('.filter-tab').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
 
-                if (rarity === 'all') {
-                    history = logResult;
-                    indexList = [];
-                    displayHistory();
-                } else {
-                    const filtered = logResult.flatMap((item, index) =>
-                        item.rarity === rarity ? [{ item, index }] : []
-                    );
-                    history = filtered.map(f => f.item);
-                    indexList = filtered.map(f => f.index);
-                    displayHistory();
-                }
-            }
+        if (rarity === 'all') {
+            history = logResult;
+            indexList = [];
+            displayHistory();
+        } else {
+            const filtered = logResult.flatMap((item, index) =>
+                item.rarity === rarity ? [{item, index}] : []
+            );
+            history = filtered.map(f => f.item);
+            indexList = filtered.map(f => f.index);
+            displayHistory();
+        }
+    }
 
-            // 更新統計
-            function updateStats() {
-                const total = logResult.length;
-                const star3 = logResult.filter(h => h.rarity === 3).length;
-                const star4 = logResult.filter(h => h.rarity === 4).length;
-                const star5 = logResult.filter(h => h.rarity === 5).length;
+    // 更新統計
+    function updateStats() {
+        const total = logResult.length;
+        const star3 = logResult.filter(h => h.rarity === 3).length;
+        const star4 = logResult.filter(h => h.rarity === 4).length;
+        const star5 = logResult.filter(h => h.rarity === 5).length;
 
-                document.getElementById('totalCount').textContent = total;
-                document.getElementById('star3').textContent = star3;
-                document.getElementById('star4').textContent = star4;
-                document.getElementById('star5').textContent = star5;
-            }
+        document.getElementById('totalCount').textContent = total;
+        document.getElementById('star3').textContent = star3;
+        document.getElementById('star4').textContent = star4;
+        document.getElementById('star5').textContent = star5;
+    }
 
-            // 顯示過濾星數
-            function createCard() {
-                const colorClass = "red";
-                let html = "";
+    // 顯示過濾星數
+    function createCard() {
+        const colorClass = "red";
+        let html = "";
 
-                const filtered = logResult.flatMap((item, index) =>
-                        item.rarity === 5 ? [{ item, index }] : []
-                    );
-                filtered.forEach((item, index) => {
-                    html += `
+        const filtered = logResult.flatMap((item, index) =>
+            item.rarity === 5 ? [{item, index}] : []
+        );
+        filtered.forEach((item, index) => {
+            html += `
                     <div class="gacha-item">
                         <img src="/static/img/${charName[item.item.name]}.png" class="gacha-avatar" />
-                        <span class="gacha-count ${colorClass}">${gachaList[item.index]}</span>
+                        <span class="gacha-count ${colorClass}">${gachaList[index + 1]}</span>
                     </div>
                 `;
-                });
-                let gachaContainer = document.getElementById("gachaContainer");
-                gachaContainer.style.display = 'flex';
-                gachaContainer.innerHTML = html;
+        });
+        let gachaContainer = document.getElementById("gachaContainer");
+        gachaContainer.style.display = 'flex';
+        gachaContainer.innerHTML = html;
+    }
+
+    let uploadedFile = null;
+
+    // 處理拖曳懸停
+    function handleDragOver(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.currentTarget.style.borderColor = '#667eea';
+        event.currentTarget.style.background = '#f8f9ff';
+    }
+
+    // 處理拖曳離開
+    function handleDragLeave(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.currentTarget.style.borderColor = '#e0e0e0';
+        event.currentTarget.style.background = '#fafafa';
+    }
+
+    // 處理拖曳放下
+    function handleDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const uploadArea = event.currentTarget;
+        uploadArea.style.borderColor = '#e0e0e0';
+        uploadArea.style.background = '#fafafa';
+
+        const files = event.dataTransfer.files;
+
+        if (files.length > 0) {
+            const file = files[0];
+
+            // 檢查檔案類型
+            const fileName = file.name.toLowerCase();
+            if (!fileName.endsWith('.log') && !fileName.endsWith('.json')) {
+                alert('請上傳 .log 或 .json 檔案');
+                return;
             }
 
-            let uploadedFile = null;
-            // 處理拖曳懸停
-            function handleDragOver(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                event.currentTarget.style.borderColor = '#667eea';
-                event.currentTarget.style.background = '#f8f9ff';
+            // 檢查檔案大小（10MB）
+            if (file.size > 10 * 1024 * 1024) {
+                alert('檔案超過 10MB 限制');
+                return;
             }
 
-            // 處理拖曳離開
-            function handleDragLeave(event) {
-                event.preventDefault();
-                event.stopPropagation();
-                event.currentTarget.style.borderColor = '#e0e0e0';
-                event.currentTarget.style.background = '#fafafa';
-            }
+            uploadedFile = file;
 
-            // 處理拖曳放下
-            function handleDrop(event) {
-                event.preventDefault();
-                event.stopPropagation();
+            // 更新 input 元素（讓表單能正確提交）
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById('fileInput').files = dataTransfer.files;
 
-                const uploadArea = event.currentTarget;
-                uploadArea.style.borderColor = '#e0e0e0';
-                uploadArea.style.background = '#fafafa';
+            displayUploadedFile();
+        }
+    }
 
-                const files = event.dataTransfer.files;
+    // 處理檔案上傳
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
 
-                if (files.length > 0) {
-                    const file = files[0];
+        if (!file) return;
 
-                    // 檢查檔案類型
-                    const fileName = file.name.toLowerCase();
-                    if (!fileName.endsWith('.log') && !fileName.endsWith('.json')) {
-                        alert('請上傳 .log 或 .json 檔案');
-                        return;
-                    }
+        // 檢查檔案大小（10MB）
+        if (file.size > 10 * 1024 * 1024) {
+            alert('檔案超過 10MB 限制');
+            event.target.value = '';
+            return;
+        }
 
-                    // 檢查檔案大小（10MB）
-                    if (file.size > 10 * 1024 * 1024) {
-                        alert('檔案超過 10MB 限制');
-                        return;
-                    }
+        uploadedFile = file;
+        displayUploadedFile();
+    }
 
-                    uploadedFile = file;
+    // 顯示已上傳檔案
+    function displayUploadedFile() {
+        const uploadArea = document.getElementById('uploadArea');
+        const fileDisplay = document.getElementById('uploadedFile');
 
-                    // 更新 input 元素（讓表單能正確提交）
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    document.getElementById('fileInput').files = dataTransfer.files;
+        if (!uploadedFile) {
+            uploadArea.style.display = 'block';
+            fileDisplay.style.display = 'none';
+            return;
+        }
 
-                    displayUploadedFile();
-                }
-            }
+        // 隱藏上傳區域，顯示檔案資訊
+        uploadArea.style.display = 'none';
+        fileDisplay.style.display = 'block';
 
-            // 處理檔案上傳
-            function handleFileUpload(event) {
-                const file = event.target.files[0];
+        const fileSize = formatFileSize(uploadedFile.size);
+        const fileIcon = getFileIcon(uploadedFile.name);
 
-                if (!file) return;
-
-                // 檢查檔案大小（10MB）
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('檔案超過 10MB 限制');
-                    event.target.value = '';
-                    return;
-                }
-
-                uploadedFile = file;
-                displayUploadedFile();
-            }
-
-            // 顯示已上傳檔案
-            function displayUploadedFile() {
-                const uploadArea = document.getElementById('uploadArea');
-                const fileDisplay = document.getElementById('uploadedFile');
-
-                if (!uploadedFile) {
-                    uploadArea.style.display = 'block';
-                    fileDisplay.style.display = 'none';
-                    return;
-                }
-
-                // 隱藏上傳區域，顯示檔案資訊
-                uploadArea.style.display = 'none';
-                fileDisplay.style.display = 'block';
-
-                const fileSize = formatFileSize(uploadedFile.size);
-                const fileIcon = getFileIcon(uploadedFile.name);
-
-                fileDisplay.innerHTML = `
+        fileDisplay.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 15px; padding: 20px; background: white; border: 2px solid #e0e0e0; border-radius: 10px; transition: all 0.3s ease; margin-top: 10px;">
                         <div style="font-size: 36px;">${fileIcon}</div>
                         <div style="flex: 1;">
@@ -1057,39 +1074,37 @@
                         </button>
                     </div>
                 `;
-            }
+    }
 
-            // 格式化檔案大小
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
+    // 格式化檔案大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
 
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-                return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
-            }
+        return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+    }
 
-            // 根據檔案類型返回圖示
-            function getFileIcon(filename) {
-                const extension = filename.split('.').pop().toLowerCase();
+    // 根據檔案類型返回圖示
+    function getFileIcon(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
 
-                if (extension === 'log' || extension === 'json') {
-                    return '📄';
-                }
-                return '📎';
-            }
+        if (extension === 'log' || extension === 'json') {
+            return '📄';
+        }
+        return '📎';
+    }
 
-            // 移除檔案
-            function removeFile() {
-                uploadedFile = null;
-                document.getElementById('fileInput').value = '';
-                displayUploadedFile();
-            }
-
-
+    // 移除檔案
+    function removeFile() {
+        uploadedFile = null;
+        document.getElementById('fileInput').value = '';
+        displayUploadedFile();
+    }
 
 
-    </script>
+</script>
 </body>
 </html>
