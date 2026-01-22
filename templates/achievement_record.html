@@ -305,16 +305,16 @@
 
         <div class="filters">
             <div class="filter-option">
-                <input type="checkbox" id="filterAll" name="filter" value="all">
-                <label for="filterAll">隱藏已完成</label>
-            </div>
-            <div class="filter-option">
-                <input type="checkbox" id="filterIncomplete" name="filter" value="incomplete">
-                <label for="filterIncomplete">優先顯示未完成</label>
+                <input type="checkbox" id="filterHideCompleted" name="filter" value="all">
+                <label for="filterHideCompleted">隱藏已完成</label>
             </div>
             <div class="filter-option">
                 <input type="checkbox" id="filterCompleted" name="filter" value="completed">
                 <label for="filterCompleted">僅顯示已完成</label>
+            </div>
+            <div class="filter-option">
+                <input type="checkbox" id="filterHiddenAchi" name="filter" value="incomplete">
+                <label for="filterHiddenAchi">僅顯示隱藏成就</label>
             </div>
         </div>
 
@@ -363,9 +363,9 @@
         selectedCategory: '索拉漫行',
         selectedSubCategory: '索拉的大地·瑝瓏',
         searchTerm: '',
-        filterAll: false,
-        filterIncomplete: false,
+        filterHideCompleted: false,
         filterCompleted: false,
+        filterHiddenAchi: false,
         completed: achievements_state
     };
 
@@ -386,6 +386,7 @@
         }
     }
 
+    // 成就轉編碼
     function getAchievementName(summary, category, key) {
         let cateIndex = achievementsData.findIndex(item => item.hasOwnProperty(category));
         let keyIndex = Object.keys(achievementsData[summary][category]).findIndex(item => item === key);
@@ -394,7 +395,6 @@
 
     function getCategoryStats(summary, category, key) {
         let aciName = getAchievementName(summary, category, key)
-        {#console.log(getAchievementName(summary, category, key));#}
         let achievements = achievementsData[summary][category][key];
         let total = achievements.length;
         let all_a = JSON.parse(localStorage.getItem("state")).completed.filter(item => item.name.startsWith(aciName))
@@ -406,26 +406,21 @@
     }
 
     // 計算成就總數
-    function getTotalStats() {
-        let allAchievements = [];
+    function renderTotalStats() {
         let total = 0;
         let completed = 0;
-        for (let category in achievementsData)
-            for (let key in achievementsData[category]) {
-                let subCategory = achievementsData[category][key];
-                for (let key in subCategory) {
-                    let value = subCategory[key];
-                    total += value.length;
-                }
-            }
-        return {completed: completed, total: total};
+        for (const s of state.completed) {
+            if (s.completed)
+                completed++;
+            total++;
+        }
+
+        document.getElementById('categoryStats').textContent = '成就分類 ' + completed + '/' + total;
     }
 
     // 渲染左邊
     function renderCategories() {
         let categoriesList = document.getElementById('categoriesList');
-        let totalStats = getTotalStats();
-        document.getElementById('categoryStats').textContent = '成就分類 ' + totalStats.completed + '/' + totalStats.total;
 
         categoriesList.innerHTML = '';
         for (let summary in achievementsData) {
@@ -438,8 +433,6 @@
                 headerDiv.classList.add("categories-header");
                 headerDiv.innerHTML = `📂 ${category}<span class="arrow">▾</span>`
                 headerDiv.addEventListener("click", (e) => {
-                    console.log(headerDiv);
-                    console.log(headerDiv.classList);
                     sDiv.classList.toggle("collapsed");
                 })
                 sDiv.appendChild(headerDiv);
@@ -491,43 +484,39 @@
 
     }
 
+    // 渲染右邊
     function renderAchievements() {
         let achievementsList = document.getElementById('achievementsList');
         let currentAchievements = achievementsData[state.selectIndex][state.selectedCategory][state.selectedSubCategory];
         document.getElementById("aciTitle").innerHTML = state.selectedSubCategory;
-
-        let filteredAchievements = currentAchievements.filter(function (achievement) {
-            let matchesSearch = achievement["名稱"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1 ||
-                achievement["描述"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1 ||
-                achievement["版本"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1;
-            {#if (JSON.parse(localStorage.getItem("state")).filterAll)#}
-            let matchesFilter = JSON.parse(localStorage.getItem("state")).filterAll && !achievement.completed
-            {#    (JSON.parse(localStorage.getItem("state")).filterIncomplete && achievement.completed) ||#}
-            {#    (JSON.parse(localStorage.getItem("state")).filterCompleted && !achievement.completed);#}
-            {#return matchesSearch && matchesFilter;#}
-            return matchesSearch;
-        })
-
+        let achiPrefix = getAchievementName(state.selectIndex, state.selectedCategory, state.selectedSubCategory)
+        
         achievementsList.innerHTML = '';
-
-        if (filteredAchievements.length === 0) {
-            let emptyDiv = document.createElement('div');
-            emptyDiv.className = 'empty-state';
-            emptyDiv.innerHTML = '<div class="empty-icon">🔍</div><p class="empty-text">沒有找到匹配的成就</p>';
-            achievementsList.appendChild(emptyDiv);
-            return;
-        }
-
-        for (let i = 0; i < filteredAchievements.length; i++) {
-            let achievement = filteredAchievements[i]; // 原始成就json
+        for (let i = 0; i < currentAchievements.length; i++) {
+            let achievement = currentAchievements[i]; // 原始成就json
             // 統計是否完成用json
             let achName = getAchievementName(state.selectIndex, state.selectedCategory, state.selectedSubCategory);
             let ach = state.completed.filter(item => item.name === `${achName}${i}`)
+            // 篩選條件: 搜尋欄+三個勾勾
+            let matches = achievement["名稱"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1 ||
+                achievement["描述"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1 ||
+                achievement["版本"].toLowerCase().indexOf(state.searchTerm.toLowerCase()) !== -1;
+            let achi = state.completed.filter(item => item.name === `${achiPrefix}${i}`)[0]
+            if (state.filterHideCompleted) {
+                matches = matches && !achi.completed
+            }
+            if (state.filterCompleted) {
+                matches = matches && achi.completed
+            }
+            if (state.filterHiddenAchi) {
+                matches = matches && achievement["名稱"].startsWith("「隱藏成就」")
+            }
+            if (!matches)
+                continue;
+
+
             let div = document.createElement('div');
             div.className = 'achievement-card' + (ach[0].completed ? ' completed' : '');
-
-            {#console.log(ach);#}
-
             let html = '<div class="achievement-content">' +
                 '<div class="achievement-info">';
             if (achievement["名稱"].startsWith("「隱藏成就」")) {
@@ -562,23 +551,33 @@
             })();
             achievementsList.appendChild(div);
         }
+
+        if (achievementsList.innerHTML === '') {
+            let emptyDiv = document.createElement('div');
+            emptyDiv.className = 'empty-state';
+            emptyDiv.innerHTML = '<div class="empty-icon">🔍</div><p class="empty-text">沒有找到匹配的成就</p>';
+            achievementsList.appendChild(emptyDiv);
+        }
     }
 
     function render() {
         renderCategories();
         renderAchievements();
+        renderTotalStats();
     }
 
+    // 搜尋
     document.getElementById('searchInput').addEventListener('input', function (e) {
         state.searchTerm = e.target.value;
         localStorage.setItem("state", JSON.stringify(state));
         render();
     });
 
+    // 三個勾勾
     let filterRadios = document.querySelectorAll('input[name="filter"]');
     for (let i = 0; i < filterRadios.length; i++) {
         filterRadios[i].addEventListener('change', function (e) {
-            state.filterStatus = e.target.value;
+            state[filterRadios[i].id] = filterRadios[i].checked;
             localStorage.setItem("state", JSON.stringify(state));
             render();
         });
