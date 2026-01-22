@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -16,6 +17,8 @@ def index(request):
     }
     return render(request, 'blog_index.html', context)
 
+
+@login_required(login_url="/login")
 def manage_blogs(request):
     blogs = Blog.objects.filter(author=request.user).order_by('-pub_time')
     comments = BlogComment.objects.filter(author=request.user).order_by('-pub_time')
@@ -25,6 +28,8 @@ def manage_blogs(request):
     }
     return render(request, 'blog_manage.html', context)
 
+
+@login_required(login_url="/login")
 def create_blog(request):
     if request.method == "POST":
         form = BlogForm(request.POST, request.FILES)
@@ -56,6 +61,7 @@ def create_blog(request):
     return render(request, "create_post.html", {"form": form})
 
 
+@login_required(login_url="/login")
 def detail(request, blog_id):
     blog = Blog.objects.get(id=blog_id)
     # 取得所有 tags
@@ -72,6 +78,8 @@ def detail(request, blog_id):
     }
     return render(request, "post_detail.html", context)
 
+
+@login_required(login_url="/login")
 def update_blog(request, blog_id):
     blog = get_object_or_404(Blog, id=blog_id)
 
@@ -115,6 +123,7 @@ def update_blog(request, blog_id):
     })
 
 
+@login_required(login_url="/login")
 def delete_blog(request, blog_id):
     blog = Blog.objects.get(id=blog_id)
     if request.method == "POST":
@@ -124,6 +133,7 @@ def delete_blog(request, blog_id):
         return JsonResponse({"error": "掛掉了"}, status=400)
 
 
+@login_required(login_url="/login")
 def create_comments(request, blog_id):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid method"}, status=400)
@@ -158,8 +168,6 @@ def create_comments(request, blog_id):
         img_obj = Image.objects.create(content_object=comment, image=img)
         image_urls.append(img_obj.image.url)
 
-
-
     return JsonResponse({
         "message": "success",
         "author": comment.author.username,
@@ -169,6 +177,7 @@ def create_comments(request, blog_id):
         "parent_id": parent.id if parent else None,
         "parent_name": parent.author.username if parent else None,
     })
+
 
 def _valid_image(images):
     """
