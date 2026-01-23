@@ -50,3 +50,4 @@ def get_achievements():
         data.append({cc.convert(cate.text.strip()): a_dict})
     with open("achievements.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+    return data
