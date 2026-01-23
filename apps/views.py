@@ -2,6 +2,8 @@ import asyncio
 import json
 import random
 import re
+from urllib.parse import urlparse
+
 import kuro
 from kuro.types import WuWaBanner, WuWaServer, Lang
 
@@ -227,20 +229,17 @@ def achievement_record(request):
     achievements_state = json.load(open('achievements_state.json', 'r'))
     if not achievements:
         achievements = get_achievements()
-    # json_file = open('achievements_state.json', 'r')
+    # json_file = open('achievements.json', 'r')
     # d = json.load(json_file)
-    # new_a = []
-    # for n1, four in enumerate(d):
-    #     for n2, (key, value) in enumerate(four.items()):
-    #         for n3, (k, v) in enumerate(value.items()):
-    #             for n4, aci in enumerate(v):
-    #                 new_d = {
-    #                     "name": f"{n1}a{n3}a{n4}",
-    #                     "completed": False
-    #                 }
-    #                 new_a.append(new_d)
-    # with open("achievements_state.json", "w", encoding="utf-8") as f:
-    #     json.dump(new_a, f, ensure_ascii=False, indent=2)
+    # for summ in d:
+    #     for c_key, cate in summ.items():
+    #         for cc_key, c in cate.items():
+    #             for a in c:
+    #                 a["連結"] = ""
+    #                 print(a)
+    #
+    # with open("achievements.json", "w", encoding="utf-8") as f:
+    #     json.dump(d, f, ensure_ascii=False, indent=2)
     context = {
         'achievements': json.dumps(achievements, ensure_ascii=False),
         'achievements_state': json.dumps(achievements_state, ensure_ascii=False),
@@ -249,7 +248,60 @@ def achievement_record(request):
 
 
 def update_achievements(request):
-    get_achievements()
-    achievements = json.load(open('achievements.json', 'r'))
+    achievements = get_achievements()
     return JsonResponse({"achievements": json.dumps(achievements, ensure_ascii=False)}, safe=False,
                         json_dumps_params={"ensure_ascii": False})
+
+
+def update_achi_link(request):
+    data = json.loads(request.body)
+    select_index = int(data.get("selectIndex"))
+    selected_category = data.get("selectedCategory")
+    selected_sub_category = data.get("selectedSubCategory")
+    achi_index = int(data.get("achiIndex"))
+    link = data.get("link")
+    if _is_youtube_url(link) or _is_bilibili_video_url(link):
+        try:
+            achievements = json.load(open('achievements.json', 'r'))
+            achievements[select_index].get(selected_category).get(selected_sub_category)[achi_index]["連結"] = link
+            with open("achievements.json", "w", encoding="utf-8") as f:
+                json.dump(achievements, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            return JsonResponse({"error": "錯誤的json檔案內容"}, status=400)
+    else:
+        return JsonResponse({"error": "錯誤的連結(暫時只接受Youtube或Bilibili連結)"}, status=400)
+
+    return JsonResponse({"msg": "編輯成功!"}, safe=False,
+                        json_dumps_params={"ensure_ascii": False})
+
+
+def _is_youtube_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+
+        allowed_domains = ("youtube.com", "youtu.be")
+
+        return any(
+            domain == d or domain.endswith("." + d)
+            for d in allowed_domains
+        )
+    except Exception:
+        return False
+
+
+def _is_bilibili_video_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        path = parsed.path
+
+        if domain == "b23.tv":
+            return True
+
+        if domain.endswith("bilibili.com"):
+            return path.startswith("/video/")
+
+        return False
+    except Exception:
+        return False

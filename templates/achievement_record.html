@@ -34,6 +34,19 @@
             overflow-y: auto;
         }
 
+        .btn {
+            padding: 1px 5px;
+            margin-left: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
         .search-box {
             padding: 20px;
         }
@@ -192,6 +205,25 @@
             margin-bottom: 8px;
         }
 
+        .achievement-input {
+            width: 100%;
+            margin: 10px 5px 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .achievement-input input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .achievement-input input::placeholder {
+            color: #aaa;
+        }
+
         .achievement-tags {
             display: flex;
             gap: 8px;
@@ -323,9 +355,9 @@
         <div class="category-header">
             <span class="category-title" id="categoryStats">總成就數 0/0</span>
             <div class="category-buttons">
-                <button class="icon-btn" id="importData">📥匯入</button>
+                <button class="btn" id="importData">📥匯入</button>
                 <input type="file" id="file-input" accept=".json" style="display:none;">
-                <button class="icon-btn" id="exportData">📥匯出</button>
+                <button class="btn" id="exportData">📥匯出</button>
             </div>
         </div>
 
@@ -341,9 +373,9 @@
                     <h1 id="aciTitle"></h1>
                 </div>
                 <div class="header-buttons">
-                    <button class="header-btn" id="selectAll">✓全選</button>
-                    <button class="header-btn" id="cancelAll">📥全部取消</button>
-                    <button class="header-btn" id="updateAchi">📥更新成就</button>
+                    <button class="btn" id="selectAll">✓全選</button>
+                    <button class="btn" id="cancelAll">📥全部取消</button>
+                    <button class="btn" id="updateAchi">📥更新成就</button>
                     {% csrf_token %}
                 </div>
             </div>
@@ -357,6 +389,7 @@
 <script>
     let achievementsData = {{ achievements|safe }}
     let achievements_state = {{ achievements_state|safe }}
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     let state = {
         selectIndex: 0,
@@ -375,6 +408,7 @@
         localStorage.setItem("state", JSON.stringify(state));
     else { // 有localStorage['state']，檢查完整性
         for (let key in state) {
+            let aaa = JSON.parse(localStorage.getItem("state"));
             if (!local.hasOwnProperty(key)) {
                 let tempLocal = JSON.parse(localStorage.getItem("state"));
                 tempLocal[key] = state[key];
@@ -418,6 +452,21 @@
         document.getElementById('categoryStats').textContent = '成就分類 ' + completed + '/' + total;
     }
 
+    // 渲染三個勾勾
+    function renderCheckBoxes() {
+        // 三個勾勾
+        let filterCheckBoxes = document.querySelectorAll('input[name="filter"]');
+        for (let i = 0; i < filterCheckBoxes.length; i++) {
+            if (state[filterCheckBoxes[i].id])
+                filterCheckBoxes[i].checked = true;
+            filterCheckBoxes[i].addEventListener('change', function (e) {
+                state[filterCheckBoxes[i].id] = filterCheckBoxes[i].checked;
+                localStorage.setItem("state", JSON.stringify(state));
+                renderAchievements();
+            });
+        }
+    }
+
     // 渲染左邊
     function renderCategories() {
         let categoriesList = document.getElementById('categoriesList');
@@ -441,7 +490,6 @@
                 let subCategory = achievementsData[summary][category];
 
                 for (let key in subCategory) {
-                    {#let stats = getCategoryStats(summary, category, key);#}
                     let div = document.createElement('div');
                     div.className = 'category-item' + (state.selectedSubCategory === key ? ' active' : '');
                     div.onclick = (function (s, c, k) {
@@ -490,7 +538,7 @@
         let currentAchievements = achievementsData[state.selectIndex][state.selectedCategory][state.selectedSubCategory];
         document.getElementById("aciTitle").innerHTML = state.selectedSubCategory;
         let achiPrefix = getAchievementName(state.selectIndex, state.selectedCategory, state.selectedSubCategory)
-        
+
         achievementsList.innerHTML = '';
         for (let i = 0; i < currentAchievements.length; i++) {
             let achievement = currentAchievements[i]; // 原始成就json
@@ -522,14 +570,33 @@
             if (achievement["名稱"].startsWith("「隱藏成就」")) {
                 html += '<h3 class="achievement-title">' + achievement["名稱"].substring(6) + '</h3>' +
                     '<p class="achievement-desc">' + achievement["描述"] + '</p>' +
+
+                    '<div class="achievement-link">' + "影片連結：" +
+                    `${achievement["連結"] === "" ? "尚未有連結" : `<a href="${achievement["連結"]}" target="_blank" class="achievement-link" id="achiLink${achName}${i}">連結</a>`}` +
+                    `<button class="btn" id="editBtn${achName}${i}" data-lister="true">編輯連結</button>` +
+                    `<div id="editArea${achName}${i}" style="display: none;">` +
+                    `<input type="text" id="editInput${achName}${i}" class="achievement-input" placeholder="請輸入連結">` +
+                    '<button class="btn" style="margin-bottom: 5px; margin-left: 0;" id="submitBtn">送出</button>' +
+                    '<p class="achievement-desc">(暫時只接受Youtube或Bilibili連結)</p>' +
+                    '</div>' +
+                    '</div>' +
+
                     '<div class="achievement-tags">' +
                     '<span class="achievement-tag">隱藏</span>'
             } else {
                 html += '<h3 class="achievement-title">' + achievement["名稱"] + '</h3>' +
                     '<p class="achievement-desc">' + achievement["描述"] + '</p>' +
-                    '<p class="achievement-link">' + "影片連結：" +
-                    `<a href="" target="_blank" class="achievement-link">連結</a>` +
-                    '</p>' +
+
+                    '<div class="achievement-link">' + "影片連結：" +
+                    `${achievement["連結"] === "" ? "尚未有連結" : `<a href="${achievement["連結"]}" target="_blank" class="achievement-link" id="achiLink${achName}${i}">連結</a>`}` +
+                    `<button class="btn" id="editBtn${achName}${i}" data-lister="true">編輯連結</button>` +
+                    `<div id="editArea${achName}${i}" style="display: none;">` +
+                    `<input type="text" id="editInput${achName}${i}" class="achievement-input" placeholder="請輸入連結">` +
+                    '<button class="btn" style="margin-bottom: 5px; margin-left: 0;" id="submitBtn">送出</button>' +
+                    '<p class="achievement-desc">(暫時只接受Youtube或Bilibili連結)</p>' +
+                    '</div>' +
+                    '</div>' +
+
                     '<div class="achievement-tags">'
             }
             html += '<span class="achievement-tag">' + achievement["版本"] + '</span>' +
@@ -542,6 +609,7 @@
                 '</div`>';
 
             div.innerHTML = html;
+
             div.querySelector(".check-circle").onclick = (function () {
                 return function () {
                     ach[0].completed = !ach[0].completed;
@@ -550,6 +618,7 @@
                 };
             })();
             achievementsList.appendChild(div);
+            addEditLinkListener(`${achName}${i}`);
         }
 
         if (achievementsList.innerHTML === '') {
@@ -561,6 +630,7 @@
     }
 
     function render() {
+        renderCheckBoxes();
         renderCategories();
         renderAchievements();
         renderTotalStats();
@@ -573,15 +643,6 @@
         render();
     });
 
-    // 三個勾勾
-    let filterRadios = document.querySelectorAll('input[name="filter"]');
-    for (let i = 0; i < filterRadios.length; i++) {
-        filterRadios[i].addEventListener('change', function (e) {
-            state[filterRadios[i].id] = filterRadios[i].checked;
-            localStorage.setItem("state", JSON.stringify(state));
-            render();
-        });
-    }
 
     // 匯出
     document.getElementById("exportData").addEventListener("click", () => {
@@ -589,7 +650,6 @@
         const data = JSON.parse(localStorage.getItem("state"));
         const achiData = data.completed
 
-        console.log(achiData);
         if (!achiData) {
             alert("localStorage 沒有資料！");
             return;
@@ -630,16 +690,16 @@
 
         fileReader.onload = (event) => {
             try {
-                // 1️⃣ 解析 JSON
+                // 解析 JSON
                 const importedData = JSON.parse(event.target.result);
 
-                // 2️⃣ 檢查格式
+                // 檢查格式
                 if (!Array.isArray(importedData) && typeof importedData !== 'object') {
                     alert("檔案格式不正確！");
                     return;
                 }
 
-                // 3️⃣ 更新 localStorage
+                // 更新 localStorage
                 const stateStr = localStorage.getItem("state");
                 let stateObj = stateStr ? JSON.parse(stateStr) : {};
                 stateObj.completed = importedData; // 覆蓋之前的 completed
@@ -700,6 +760,68 @@
             }
         });
     });
+
+    // 編輯連結事件
+    function addEditLinkListener(id) {
+        const achiLink = document.getElementById(`achiLink${id}`);
+        const editBtn = document.getElementById(`editBtn${id}`);
+        const editArea = document.getElementById(`editArea${id}`);
+        const editInput = editArea.querySelector(`input[id="editInput${id}"]`);
+        const submitBtn = editArea.querySelector('#submitBtn');
+
+        editBtn.addEventListener("click", () => {
+            if (editArea.style.display === "none") {
+                editArea.style.display = "block";
+                editBtn.textContent = "取消";
+                if (editBtn.dataset.lister === "true") {
+                    editBtn.dataset.lister = "false";
+                    submitBtn.addEventListener("click", () => {
+                        const value = editInput.value;
+                        if (value === "")
+                            return
+
+                        fetch("{% url 'update_achi_link' %}", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "X-CSRFToken": csrftoken,
+                            },
+                            body: JSON.stringify({
+                                selectIndex: state.selectIndex,
+                                selectedCategory: state.selectedCategory,
+                                selectedSubCategory: state.selectedSubCategory,
+                                "achiIndex": id.split("a")[2],
+                                "link": value
+                            })
+                        })
+                            .then(res => {
+                                if (!res.ok) {
+                                    // 主動丟錯，才會進 catch
+                                    return res.json().then(err => {
+                                        throw err;
+                                    });
+                                }
+                                return res.json();
+                            })
+                            .then(data => {
+                                alert(data.msg);
+                                achiLink.href = editInput.value;
+                                editInput.value = "";
+                                editArea.style.display = "none";
+                                editBtn.textContent = "編輯連結";
+
+                            })
+                            .catch(err => alert(`大錯特錯: ${err.error}`));
+                    });
+                }
+            } else {
+                editArea.style.display = "none";
+                editBtn.textContent = "編輯連結";
+            }
+        });
+
+
+    }
 
     render();
 
