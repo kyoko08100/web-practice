@@ -21,6 +21,7 @@ def get_data():
 
 
 def get_achievements():
+    raw_data = json.load(open('achievements.json', 'r'))
     html = get_data()
     soup = BeautifulSoup(html, "html.parser")
     tables = soup.find_all("table")
@@ -29,24 +30,30 @@ def get_achievements():
     name_list = ["名稱", "版本", "合集", "描述", "獎勵"]
     a_type = ""  # 成就合集(類別) ex. 往日之音 今州 Ⅱ
     cc = OpenCC('s2tw')  # s2tw: 簡體轉臺灣正體
-    for cate, table in zip(categories, tables):
+    for s, (cate, table) in enumerate(zip(categories, tables)):
         a_dict = {}
+        count = 0
         for tr in table.find_all("tr"):
             tds = tr.find_all("td")
             a = {}
-            for i, td in enumerate(tds):
+            for i, td in enumerate(tds):  # i對應name_list
                 text = cc.convert(td.text.strip())
                 if i >= 5:
                     continue
                 if i == 2:
+                    if a_type != text:
+                        count = 0
                     a_type = text
                 else:
                     a[name_list[i]] = text
             if a_dict.get(a_type):
+                a["連結"] = raw_data[s].get(cc.convert(cate.text.strip())).get(a_type)[count].get("連結")
                 a_dict.get(a_type).append(a)
             else:
                 if a_type != "合集":
+                    a["連結"] = raw_data[s].get(cc.convert(cate.text.strip())).get(a_type)[count].get("連結")
                     a_dict[a_type] = [a]
+            count += 1
         data.append({cc.convert(cate.text.strip()): a_dict})
     with open("achievements.json", "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)

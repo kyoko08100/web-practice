@@ -47,6 +47,19 @@
             display: inline-block;
         }
 
+        /* hover 效果 */
+        .btn:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        /* disabled 狀態 */
+        .btn:disabled {
+            cursor: not-allowed; /* 改成禁止點擊的圖案 */
+            opacity: 0.5; /* 變暗效果 */
+            background-color: #007bff; /* 保持顏色或換成灰色 */
+            color: #ccc;
+        }
+
         .search-box {
             padding: 20px;
         }
@@ -763,11 +776,11 @@
 
     // 編輯連結事件
     function addEditLinkListener(id) {
-        const achiLink = document.getElementById(`achiLink${id}`);
         const editBtn = document.getElementById(`editBtn${id}`);
         const editArea = document.getElementById(`editArea${id}`);
         const editInput = editArea.querySelector(`input[id="editInput${id}"]`);
         const submitBtn = editArea.querySelector('#submitBtn');
+        const parentDiv = editBtn.closest(".achievement-link");
 
         editBtn.addEventListener("click", () => {
             if (editArea.style.display === "none") {
@@ -794,22 +807,35 @@
                                 "link": value
                             })
                         })
-                            .then(res => {
+                            .then(async res => {
+                                const data = await res.json();
+
                                 if (!res.ok) {
-                                    // 主動丟錯，才會進 catch
-                                    return res.json().then(err => {
-                                        throw err;
-                                    });
+                                    throw data; // 丟給 catch
                                 }
-                                return res.json();
+
+                                return data;
                             })
                             .then(data => {
                                 alert(data.msg);
-                                achiLink.href = editInput.value;
+                                if (parentDiv.children[0].tagName === "A") {  // 已經有連結
+                                    const achiLink = document.getElementById(`achiLink${id}`);
+                                    achiLink.href = editInput.value;
+                                } else {
+                                    let aTag = document.createElement("a");
+                                    aTag.href = editInput.value;
+                                    aTag.target = "_blank";
+                                    aTag.classList.add("achievement-link");
+                                    aTag.id = `achiLink${id}`;
+                                    aTag.textContent = "連結";
+                                    parentDiv.firstChild.textContent = "影片連結：";
+                                    parentDiv.insertBefore(aTag, editBtn);
+                                }
+
+                                // 把輸入的地方縮起來
                                 editInput.value = "";
                                 editArea.style.display = "none";
                                 editBtn.textContent = "編輯連結";
-
                             })
                             .catch(err => alert(`大錯特錯: ${err.error}`));
                     });
